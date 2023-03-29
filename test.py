@@ -4,22 +4,42 @@
 import numpy as np
 import matplotlib.pyplot as plt 
 from matplotlib import style 
+import pandas as pd
+from sklearn import preprocessing
+from scipy import stats
 
 style.use('ggplot')
 
-xaxis, xAccel, y, z, a = np.loadtxt('5_sec_jumping_front.csv', delimiter = ',', unpack = True)
+dataset = pd.read_csv("5_sec_walking_front.csv")
+data = dataset.iloc[0:,1]
 
-def graph():
-	#plt.plot(xaxis,xAccel)
-	plt.plot(xaxis,y)
-	#plt.plot(xaxis,z)
-  #plt.plot(xaxis,a)
+Q1 = data.quantile(0.25)
+Q3 = data.quantile(0.75)
+IQR = Q3 - Q1
 
+data = data[~((data < (Q1 - 1.5 * IQR)) |(data > (Q3 + 1.5 * IQR)))]
 
-	plt.title('Accelerometer Data Collected with SensorLog App on iPhone 6S')
-	plt.xlabel('time')
-	plt.ylabel('Acceleration')
+print(data)
 
-	plt.show()
+window_size = 5
+data5 = data.rolling(window_size, center=True).mean()
 
-graph()
+window_size = 31
+data31 = data.rolling(window_size, center=True).mean()
+
+window_size = 51
+data51 = data.rolling(window_size, center=True).mean()
+
+fig, ax = plt.subplots()
+
+ax.plot(data, label = 'Unfiltered')
+#ax.plot(data5, label='Window size 5')
+#ax.plot(data31, label='Window size 31')
+#ax.plot(data51, label='Window size 51')
+
+ax.set_xlabel('Time')
+ax.set_ylabel('Value')
+ax.legend()
+
+plt.show()
+
