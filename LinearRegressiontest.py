@@ -1,11 +1,17 @@
+from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression,LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.metrics import accuracy_score, confusion_matrix
 from scipy.stats import skew
+from sklearn.metrics import recall_score, ConfusionMatrixDisplay, roc_curve, RocCurveDisplay, roc_auc_score, f1_score
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+import pickle
+
 
 
 # walking_data = pd.read_csv('5_sec_walking_front.csv')
@@ -47,11 +53,11 @@ from scipy.stats import skew
 # print(f'Prediction: {prediction}')
 
 # Define the time window for computing summary statistics
-window_size = 100
+window_size = 8
 
 # Function to compute summary statistics for each axis over a window
 def compute_stats(data):
-  return [np.mean(data), np.std(data), np.min(data), np.max(data), np.ptp(data), np.median(data), np.var(data), skew(data)]
+  return [np.mean(data), np.std(data), np.min(data), np.max(data), np.median(data), np.var(data), skew(data),np.sqrt(np.mean(data**2))]
 
 
 # Function to extract features from the accelerometer data
@@ -75,10 +81,10 @@ def extract_features(data):
     return np.array(features)
 
 # Load the two datasets into Pandas dataframes using the read_csv method.
-walking_data = pd.read_csv('Raw Data walking front pocket.csv')
-running_data = pd.read_csv('Raw Data jumping .csv')
-walking_data = walking_data.dropna() #<--- SECOND ISSUE
-running_data = running_data.dropna() #<--- SECOND ISSUE
+walking_data = pd.read_csv('5_sec_walking_front.csv')
+running_data = pd.read_csv('5_sec_jumping_front.csv')
+walking_data = walking_data.dropna() 
+running_data = running_data.dropna()
 
 # Preprocess the data by extracting features from the accelerometer data
 walking_features = extract_features(walking_data.values[:, 1:])
@@ -92,18 +98,54 @@ combined_labels = np.concatenate((walking_labels, running_labels))
 combined_data = np.column_stack((combined_features, combined_labels))
 
 # Split the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(combined_features, combined_labels, test_size=0.1,shuffle = True, random_state=0)
+X_train, X_test, y_train, Y_test = train_test_split(combined_features, combined_labels, test_size=0.1,shuffle = True, random_state=0)
 
-# Train a decision tree classifier on the training data
-dtc = RandomForestClassifier()
-dtc.fit(X_train, y_train)
+l_reg = LogisticRegression(max_iter=10000)
+scaler = StandardScaler()
+clf = make_pipeline(scaler,l_reg)
+clf.fit(X_train, y_train)
+
+pickle.dump(clf,open('model.pkl','wb'))
+pickle.dump(scaler,open('scaler.pkl','wb'))
+
+model=pickle.load(open('model.pkl','rb'))
+scaler = pickle.load(open('scaler.pkl','rb'))
+df = pd.read_csv('Raw Data jumping .csv')
+scaled_data = extract_features(df.values[:, 1:])
+predictions = model.predict(scaled_data)
+print(f'Prediction: {predictions}')
+
+num_ones = np.count_nonzero(predictions)
+print(predictions.size)
+print("Number of ones:", num_ones)
+accuracy1 = accuracy_score(Y_test, predictions)
+print("Accuracy: {:.2f}%".format(accuracy1 * 100))
+
 
 # Test the model on the testing data and evaluate its performance
-y_pred = dtc.predict(X_test)
-# accuracy = np.mean(y_pred == y_test)
-accuracy = accuracy_score(y_test, y_pred)
+y_pred = clf.predict(X_test)
+y_clf_prob = clf.predict_proba(X_test)
+accuracy = accuracy_score(Y_test, y_pred)
 
+print(X_test.shape)
 # new_data = pd.read_csv('Raw Data jumping .csv')
-# prediction = lr.predict(new_data)
+# prediction = clf.predict(new_data)
 # print(f'Prediction: {prediction}')
 print("Accuracy: {:.2f}%".format(accuracy * 100))
+
+recall = recall_score(Y_test,y_pred)
+print('recall is:',recall)
+
+cm = confusion_matrix(Y_test,y_pred)
+cm_display = ConfusionMatrixDisplay(cm).plot()
+plt.show()
+
+f1Score = f1_score(Y_test, y_pred)
+print('F1 Score is:', f1Score)
+
+fpr,tpr,_ = roc_curve(Y_test, y_clf_prob[:,1],pos_label=clf.classes_[1])
+roc_display = RocCurveDisplay(fpr=fpr,tpr=tpr).plot()
+plt.show()
+
+auc = roc_auc_score(Y_test,y_clf_prob[:,-1])
+print('the AUC is:', auc)
