@@ -2,39 +2,193 @@ import pandas as pd
 import numpy as np
 import h5py
 from scipy.signal import savgol_filter
+from sklearn import preprocessing
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
+from scipy.stats import skew
 
+
+
+df1 = pd.read_csv('MemberData/LukaRawDataFrontPocketWalking.csv',nrows = 30005)
+df2 = pd.read_csv('MemberData/LukaRawDataWalkingJacket.csv',nrows = 30005)
+df3 = pd.read_csv('MemberData/LukaRawDataBackPocketWalking.csv',nrows = 30005)
+df4 = pd.read_csv('MemberData/LukaRawDataJumping.csv')
+
+# df5 = pd.read_csv('MemberData/CJRawDataFrontPocketWalking.csv',nrows = 30005)
+# df6 = pd.read_csv('MemberData/CJRawDataJacketWalking.csv',nrows = 30005)
+# df7 = pd.read_csv('MemberData/CJRawDataBackPocketWalking.csv',nrows = 30005)
+listOfData = []
+listOfData.append(df1)
+listOfData.append(df2)
+listOfData.append(df3)
+listOfData.append(df4)
+# listOfData.append(df5)
+# listOfData.append(df6)
+
+#df7 = pd.read_csv('MemberData/BennettRawDataWalking.csv')
 
 LukaWalkingData = pd.concat(
-    [pd.read_csv('MemberData/LukaRawDataFrontPocketWalking.csv'),pd.read_csv('MemberData/LukaRawDataWalkingJacket.csv'),
-     pd.read_csv('MemberData/LukaRawDataBackPocketWalking.csv')]
+    [df1,df2,df3]
 )
+# CJWalkingData = pd.concat(
+#     [df4,df5,df6]
+# )
 
-BennettWalkingData = pd.read_csv('MemberData/BennettRawDataWalking.csv')
+#use a window size of like 5-15
+def normalizeData(data,windowSize):
+    q1 = data.quantile(0.25)
+    q3 = data.quantile(0.75)
+    iqr = q3 - q1
+    data[(data < (q1 - 1.5 * iqr)) | (data > (q3 + 1.5 * iqr))] = np.nan
 
-CJWalkingData = pd.concat(
-    [pd.read_csv('MemberData/CJRawDataFrontPocketWalking.csv'),pd.read_csv('MemberData/CJRawDataJacketWalking.csv'),
-     pd.read_csv('MemberData/CJRawDataBackPocketWalking.csv')]
-)
+    data.interpolate(method = 'linear',inplace=True)
 
-LukaJumpingData = pd.read_csv('MemberData/LukaRawDataJumping.csv')
+    data = data.rolling(windowSize,center = True).mean()
 
-BennettJumpingData = pd.read_csv('MemberData/BennettRawDataJumping.csv')
+    data.fillna(method = 'ffill',inplace=True)
 
-CJJumpingData = pd.read_csv('MemberData/CJRawDataJumping.csv')
+    data = data.loc[5:,:]
 
+    x = data.values #returns a numpy array
+    min_max_scaler = preprocessing.MinMaxScaler()
+    x_scaled = min_max_scaler.fit_transform(x)
+    dataNew = pd.DataFrame(x_scaled)
+
+    return dataNew
+
+normalizedData = []
+for i in range(0,4):
+    normalizedData.append(normalizeData(listOfData[i],10))
+
+# def compute_stats(data):
+#   return [np.mean(data), np.std(data), np.min(data), np.max(data), np.median(data), np.var(data), skew(data),np.sqrt(np.mean(data**2))]
+
+# def extract_features(data,wsize):
+#     data = data.iloc[:,1:]
+#     # Create empty list to store features for each window
+#     features = [[]]
+#     # Iterate over each window of data
+#     for i in range(0, len(data) - wsize, wsize):
+#         windowFeatures = []
+#         # Extract the x, y, z accelerometer data for the current window
+#         window_data = data.iloc[i:i+wsize-1, :]
+#         x_data = window_data.iloc[:, 0]
+#         y_data = window_data.iloc[:, 1]
+#         z_data = window_data.iloc[:, 2]
+#         # Compute summary statistics for each axis over the window
+#         x_stats = compute_stats(x_data)
+#         y_stats = compute_stats(y_data)
+#         z_stats = compute_stats(z_data)
+#         # Append the summary statistics to the features list
+#         windowFeatures.append(x_stats)
+#         windowFeatures.append(y_stats)
+#         windowFeatures.append(z_stats)
+#         features.insert(i,windowFeatures)
+#     # Convert the features list to a numpy array and return it
+#     return features
+
+# def extract_features(windows):
+#     # Create an empty array to hold the feature vectors
+#     features = np.zeros((windows.shape[0], 10, 4))
+
+#     # Iterate over each time window and extract the features
+#     for i in range(windows.shape[2]):
+#         for j in range(windows.shape[0]):
+#             # Extract the data from the window
+#             window_data = windows[j, :, i]
+
+#             # Compute the features
+#             max_val = np.max(window_data)
+#             min_val = np.min(window_data)
+#             range_val = max_val - min_val
+#             mean_val = np.mean(window_data)
+#             median_val = np.median(window_data)
+#             var_val = np.var(window_data)
+#             skew_val = skew(window_data)
+#             rms_val = np.sqrt(np.mean(window_data ** 2))
+#             kurt_val = np.mean((window_data - np.mean(window_data)) ** 4) / (np.var(window_data) ** 2)
+#             std_val = np.std(window_data)
+
+#             # Store the features in the features array
+#             features[j, :, i] = (max_val, min_val, range_val, mean_val, median_val, var_val, skew_val,
+#                                  rms_val, kurt_val, std_val)
+
+#     return features
+
+
+def extract_features(data,wsize):
+    featuresX = []
+    featuresY = []
+    featuresZ = []
+    features = []
+    featuresX.append(data.iloc[:,1].rolling(window=wsize).mean())
+    featuresY.append(data.iloc[:,2].rolling(window=wsize).mean())
+    featuresZ.append(data.iloc[:,3].rolling(window=wsize).mean())
+    featuresX.append(data.iloc[:,1].rolling(window=wsize).std())
+    featuresY.append(data.iloc[:,2].rolling(window=wsize).std())
+    featuresZ.append(data.iloc[:,3].rolling(window=wsize).std())
+    featuresX.append(data.iloc[:,1].rolling(window=wsize).max())
+    featuresY.append(data.iloc[:,2].rolling(window=wsize).max())
+    featuresZ.append(data.iloc[:,3].rolling(window=wsize).max())
+    featuresX.append(data.iloc[:,1].rolling(window=wsize).min())
+    featuresY.append(data.iloc[:,2].rolling(window=wsize).min())
+    featuresZ.append(data.iloc[:,3].rolling(window=wsize).min())
+    featuresX.append(data.iloc[:,1].rolling(window=wsize).kurt())
+    featuresY.append(data.iloc[:,2].rolling(window=wsize).kurt())
+    featuresZ.append(data.iloc[:,3].rolling(window=wsize).kurt())
+    featuresX.append(data.iloc[:,1].rolling(window=wsize).skew())
+    featuresY.append(data.iloc[:,2].rolling(window=wsize).skew())
+    featuresZ.append(data.iloc[:,3].rolling(window=wsize).skew())
+
+    features.append(featuresX)
+    features.append(featuresY)
+    features.append(featuresZ)
+    np.random.shuffle(features)
+    return np.array(features)
+
+
+featureData = []
+for i in range(0,4):
+    for j in range(0, len(normalizedData[i]) - 500, 500):
+        featureData.append(extract_features(normalizedData[i].iloc[j:j+500-1, :],10))
+        print(featureData[i].shape)
+
+# zeros_col = np.zeros((featureData[0][0].shape[0],1))
+# testArray = np.hstack((featureData[0][0],zeros_col))
+# print(testArray)
+
+
+
+# BennettWalkingData = pd.read_csv('MemberData/BennettRawDataWalking.csv')
+
+# CJWalkingData = pd.concat(
+#     [pd.read_csv('MemberData/CJRawDataFrontPocketWalking.csv'),pd.read_csv('MemberData/CJRawDataJacketWalking.csv'),
+#      pd.read_csv('MemberData/CJRawDataBackPocketWalking.csv')]
+# )
+
+df7 = pd.read_csv('MemberData/LukaRawDataJumping.csv')
+
+LukaJumpingData = df7
+
+# BennettJumpingData = pd.read_csv('MemberData/BennettRawDataJumping.csv')
+
+df8 = pd.read_csv('MemberData/CJRawDataJumping.csv')
+
+CJJumpingData = df8
 
 all_data = {
     'Luka': {'walking': LukaWalkingData, 'jumping': LukaJumpingData},
-    'Bennett': {'walking': BennettWalkingData, 'jumping': BennettJumpingData},
+    # 'Bennett': {'walking': BennettWalkingData, 'jumping': BennettJumpingData},
     'CJ': {'walking': CJWalkingData, 'jumping': CJJumpingData}
 }
-combinedWalkingData = pd.concat([LukaWalkingData, BennettWalkingData, CJWalkingData], ignore_index=True)
-combinedJumpingData = pd.concat([LukaJumpingData, BennettJumpingData, CJJumpingData], ignore_index=True)
+
+
+
+combinedWalkingData = pd.concat([LukaWalkingData,  CJWalkingData], ignore_index=True) # add BennettWalkingData
+combinedJumpingData = pd.concat([LukaJumpingData,  CJJumpingData], ignore_index=True) # add BennettJumpingData later
 combined_data = pd.concat([combinedWalkingData, combinedJumpingData], ignore_index=True)
 
 #Concatenate walking and jumping data

@@ -26,67 +26,67 @@ def remove_outliers(data):
     return np.array(all_dfs)
 
 # Function to filter the data window by window
-def filterData(data, wsize):
-    filtered_data = np.zeros((data.shape[0], data.shape[1]-wsize+1, data.shape[2]))
+# def filterData(data, wsize):
+#     filtered_data = np.zeros((data.shape[0], data.shape[1]-wsize+1, data.shape[2]))
 
-    for i in range(data.shape[0]):
-        x_df = pd.DataFrame(data[i, :, 0])
-        y_df = pd.DataFrame(data[i, :, 1])
-        z_df = pd.DataFrame(data[i, :, 2])
-        total_df = pd.DataFrame(data[i, :, 3])
+#     for i in range(data.shape[0]):
+#         x_df = pd.DataFrame(data[i, :, 0])
+#         y_df = pd.DataFrame(data[i, :, 1])
+#         z_df = pd.DataFrame(data[i, :, 2])
+#         total_df = pd.DataFrame(data[i, :, 3])
 
-        # Remove outliers using interquartile range (IQR) method for each axis
-        for df in [x_df, y_df, z_df, total_df]:
-            q1 = df.quantile(0.25)
-            q3 = df.quantile(0.75)
-            iqr = q3 - q1
-            df[(df < (q1 - 1.5 * iqr)) | (df > (q3 + 1.5 * iqr))] = np.nan
+#         # Remove outliers using interquartile range (IQR) method for each axis
+#         for df in [x_df, y_df, z_df, total_df]:
+#             q1 = df.quantile(0.25)
+#             q3 = df.quantile(0.75)
+#             iqr = q3 - q1
+#             df[(df < (q1 - 1.5 * iqr)) | (df > (q3 + 1.5 * iqr))] = np.nan
 
-        # Replace NaN values with the mean of the remaining values
-        x_df.fillna(x_df.mean(), inplace=True)
-        y_df.fillna(y_df.mean(), inplace=True)
-        z_df.fillna(z_df.mean(), inplace=True)
-        total_df.fillna(total_df.mean(), inplace=True)
+#         # Replace NaN values with the mean of the remaining values
+#         x_df.fillna(x_df.mean(), inplace=True)
+#         y_df.fillna(y_df.mean(), inplace=True)
+#         z_df.fillna(z_df.mean(), inplace=True)
+#         total_df.fillna(total_df.mean(), inplace=True)
 
-        # print(np.sum(x_df.isna()).sum())
+#         # print(np.sum(x_df.isna()).sum())
 
-        x_sma = x_df.rolling(wsize).mean().values.ravel()
-        y_sma = y_df.rolling(wsize).mean().values.ravel()
-        z_sma = z_df.rolling(wsize).mean().values.ravel()
-        total_sma = total_df.rolling(wsize).mean().values.ravel()
+#         x_sma = x_df.rolling(wsize).mean().values.ravel()
+#         y_sma = y_df.rolling(wsize).mean().values.ravel()
+#         z_sma = z_df.rolling(wsize).mean().values.ravel()
+#         total_sma = total_df.rolling(wsize).mean().values.ravel()
 
-        # Discard the filtered NaN values
-        x_sma = x_sma[wsize - 1:]
-        y_sma = y_sma[wsize - 1:]
-        z_sma = z_sma[wsize - 1:]
-        total_sma = total_sma[wsize - 1:]
+#         # Discard the filtered NaN values
+#         x_sma = x_sma[wsize - 1:]
+#         y_sma = y_sma[wsize - 1:]
+#         z_sma = z_sma[wsize - 1:]
+#         total_sma = total_sma[wsize - 1:]
 
-        # print(np.sum(np.isnan(x_sma)).sum())
+#         # print(np.sum(np.isnan(x_sma)).sum())
 
-        # Normalize the filtered data
-        sc = StandardScaler()
-        x_scaled = sc.fit_transform(x_sma.reshape(-1, 1)).ravel()
-        y_scaled = sc.fit_transform(y_sma.reshape(-1, 1)).ravel()
-        z_scaled = sc.fit_transform(z_sma.reshape(-1, 1)).ravel()
-        total_scaled = sc.fit_transform(total_sma.reshape(-1, 1)).ravel()
+#         # Normalize the filtered data
+#         sc = StandardScaler()
+#         x_scaled = sc.fit_transform(x_sma.reshape(-1, 1)).ravel()
+#         y_scaled = sc.fit_transform(y_sma.reshape(-1, 1)).ravel()
+#         z_scaled = sc.fit_transform(z_sma.reshape(-1, 1)).ravel()
+#         total_scaled = sc.fit_transform(total_sma.reshape(-1, 1)).ravel()
 
-        # print(np.sum(np.isnan(x_scaled)).sum())
+#         # print(np.sum(np.isnan(x_scaled)).sum())
 
-        # Replace NaN values with linear interpolation
-        x_clean = pd.Series(x_scaled).interpolate().values
-        y_clean = pd.Series(y_scaled).interpolate().values
-        z_clean = pd.Series(z_scaled).interpolate().values
-        total_clean = pd.Series(total_scaled).interpolate().values
+#         # Replace NaN values with linear interpolation
+#         x_clean = pd.Series(x_scaled).interpolate().values
+#         y_clean = pd.Series(y_scaled).interpolate().values
+#         z_clean = pd.Series(z_scaled).interpolate().values
+#         total_clean = pd.Series(total_scaled).interpolate().values
 
-        # print(np.sum(np.isnan(x_clean)).sum())
-        # print("-----------------------------")
+#         # print(np.sum(np.isnan(x_clean)).sum())
+#         # print("-----------------------------")
 
-        filtered_data[i, :, 0] = x_clean
-        filtered_data[i, :, 1] = y_clean
-        filtered_data[i, :, 2] = z_clean
-        filtered_data[i, :, 3] = total_clean
+#         filtered_data[i, :, 0] = x_clean
+#         filtered_data[i, :, 1] = y_clean
+#         filtered_data[i, :, 2] = z_clean
+#         filtered_data[i, :, 3] = total_clean
 
-    return filtered_data
+#     return filtered_data
 
 
 # Read the dataset
