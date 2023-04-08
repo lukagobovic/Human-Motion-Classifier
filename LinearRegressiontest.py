@@ -45,7 +45,7 @@ import pickle
 # dtc = DecisionTreeClassifier()
 # dtc.fit(X_train, y_train)
 
-# score = lr.score(X_test, y_test)
+#score = lr.score(X_test, y_test)
 # print(f'Model accuracy: {score:.2f}')
 
 # new_data = pd.read_csv('Raw Data jumping .csv')

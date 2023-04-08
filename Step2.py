@@ -9,6 +9,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from scipy.stats import skew
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.linear_model import LogisticRegression
+
+
 
 
 
@@ -78,7 +82,7 @@ def extract_features_walking(data, wsize):
     # Append a column of zeros to the combined X, Y, and Z data
     zeros = np.zeros((xyz_data.mean().shape[0], 1))
     features = np.hstack((xyz_data.mean(), xyz_data.std(), xyz_data.max(),
-                               xyz_data.min(), xyz_data.kurt(), xyz_data.skew(), zeros))
+                               xyz_data.min(), xyz_data.median(), xyz_data.var(),  xyz_data.kurt(), xyz_data.skew(), zeros))
 
     np.random.shuffle(features)
     datFrame = pd.DataFrame(features)
@@ -99,7 +103,7 @@ def extract_features_jumping(data, wsize):
     # Append a column of zeros to the combined X, Y, and Z data
     ones = np.ones((xyz_data.mean().shape[0], 1))
     features = np.hstack((xyz_data.mean(), xyz_data.std(), xyz_data.max(),
-                               xyz_data.min(), xyz_data.kurt(), xyz_data.skew(), ones))
+                               xyz_data.min(), xyz_data.median(), xyz_data.var(), xyz_data.kurt(), xyz_data.skew(), ones))
 
     np.random.shuffle(features)
     datFrame = pd.DataFrame(features)
@@ -121,13 +125,29 @@ for j in range(0, len(normalizedData[i]) - 500, 500):
     tempData = pd.concat([tempData,df])
 featureData = pd.concat([featureData,tempData])
 featureData.interpolate(method = 'linear',inplace=True)
-print(featureData.isna().sum())
+
+X = featureData.iloc[:,0:24]
+y = featureData.iloc[:,-1]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
 
 
-# zeros_col = np.zeros((featureData[0][0].shape[0],1))
-# testArray = np.hstack((featureData[0][0],zeros_col))
-# print(testArray)
+dtc = DecisionTreeClassifier()
+dtc.fit(X_train, y_train)
 
+# scaler = StandardScaler()
+
+# l_reg = LogisticRegression(max_iter=10000)
+# clf = make_pipeline(StandardScaler(),l_reg)
+
+# clf.fit(X_train,y_train)
+
+y_pred = dtc.predict(X_test)
+# y_clf_prob = clf.predict_proba(X_test)
+# print('y_pred is:',y_pred)
+# print('y_clf_prob is:',y_clf_prob)
+
+acc = accuracy_score(y_test,y_pred)
+print('accuracy is:',acc)
 
 
 # BennettWalkingData = pd.read_csv('MemberData/BennettRawDataWalking.csv')
