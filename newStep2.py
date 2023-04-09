@@ -57,6 +57,7 @@ all_data = {
 listOfJumpingData = pd.concat([df7,df8,BennettJumpingData])
 listOfJumpingData['labels'] = 1
 lisfOfCombinedData = pd.concat([listOfWalkingData,listOfJumpingData])
+lisfOfCombinedData = lisfOfCombinedData.drop('Time (s)', axis=1)
 
 
 window_size = 500 # assuming the sampling rate is 50 Hz
@@ -68,21 +69,36 @@ for i in range(0, len(lisfOfCombinedData)-window_size+1, window_size):
     windowDf = pd.DataFrame(windowNP)
     data_windows.append(windowDf)
 
+# print(data_windows)
+# data = pd.concat(data_windows, ignore_index=True)
+data_windows = data_windows[:500]
+np.random.shuffle(data_windows)
+data_list = []
+label_list = []
+for sublist in data_windows:
+    data_df = pd.DataFrame(sublist)
+    data_list.append(data_df.iloc[:, :4])
+    label_list.append(data_df.iloc[:, 4])
+# print(label_list)
+#print(data_list)
 
-data = pd.concat(data_windows, ignore_index=True)
-print(data)
 
-dataList = data.iloc[:,1:5]
-dataList = dataList.iloc[:250000, :]
-print(dataList)
-labelList = data.iloc[:,-1]
-labelList = labelList.iloc[:250000]
-print(labelList)
-X_train, X_test, y_train, y_test = train_test_split(dataList, labelList, test_size=0.1)
-print(X_train)
-print(X_test)
-print(y_train)
-print(y_test)
+# Split the segmented data into 90% train and 10% test
+# num_train = int(0.9 * len(all_segments))
+# train_segments = all_segments[:num_train]
+# test_segments = all_segments[num_train:]
+
+# dataList = data.iloc[:,0:5]
+# dataList = dataList.iloc[:250000, :]
+
+# labelList = data.iloc[:,-1]
+# labelList = labelList.iloc[:250000]
+
+X_train, X_test, y_train, y_test = train_test_split(data_list, label_list, test_size=0.1)
+# print(X_train)
+# print(X_test)
+# print(y_train)
+# print(y_test)
 
 def normalizeData(data, windowSize):
     q1 = data.quantile(0.25)
@@ -104,8 +120,8 @@ def normalizeData(data, windowSize):
     return dataNew
 
 
-normalizedData_train = normalizeData(X_train, 10)
-normalizedData_test = normalizeData(X_test, 10)
+# normalizedData_train = normalizeData(X_train, 5)
+# normalizedData_test = normalizeData(X_test, 5)
 
 
 def extract_features(data, wsize):
@@ -130,37 +146,90 @@ def extract_features(data, wsize):
     datFrame = pd.DataFrame(features)
     return datFrame
 
-# Extract features from normalized training data
-train_features = pd.DataFrame()
-for j in range(0, len(normalizedData_train) - 500, 500):
-    df = extract_features(normalizedData_train.iloc[j:j+500], 500)
-    train_features = pd.concat([train_features, df])
+normalizedData_train = []
+for window in X_train:
+    df = pd.DataFrame(window)
+    normalized_window = normalizeData(df, 5)
+    normalizedData_train.append(normalized_window)
 
-# Extract features from normalized testing data
-test_features = pd.DataFrame()
-for j in range(0, len(normalizedData_test) - 500, 500):
-    df = extract_features(normalizedData_test.iloc[j:j+500], 500)
-    test_features = pd.concat([test_features, df])
+# normalize each data window in X_test
+normalizedData_test = []
+for window in X_test:
+    df = pd.DataFrame(window)
+    normalized_window = normalizeData(df, 5)
+    normalizedData_test.append(normalized_window)
 
-train_features.fillna(method = 'ffill',inplace=True)
-test_features.fillna(method = 'ffill',inplace=True)
+features_train = []
+for window in normalizedData_train:
+    features_window = extract_features(window, 5)
+    features_window = features_window.dropna()
+    features_train.append(features_window)
 
-print(train_features.isna().sum())
+# extract features from each normalized data window in X_test
+features_test = []
+for window in normalizedData_test:
+    features_window = extract_features(window, 5)
+    features_window = features_window.dropna()
+    features_test.append(features_window)
 
-y_train = y_train.iloc[:len(train_features)]
-y_test = y_test.iloc[:len(test_features)]
+X_train = np.concatenate(features_train).reshape(-1, 27)
+# X_train = pd.DataFrame(X_train)
+X_test = np.concatenate(features_test).reshape(-1, 27)
+# X_test = pd.DataFrame(X_test)
 
-l_reg = LogisticRegression(max_iter=10000)
-scaler = StandardScaler()
-clf = make_pipeline(scaler,l_reg)
-clf.fit(train_features, y_train)
+# print(X_train)
+# print(X_test)
+# print(features_train)
+# X_train = np.array(features_train).reshape(-1, 27)
+# X_test = np.array(features_test).reshape(-1, 27)
+# X_train = pd.DataFrame(X_train)
+# X_test = pd.DataFrame(X_test)
+# print(X_train)
+# print(X_test)
+y_train = np.array(y_train).ravel()
+y_test = np.array(y_test).ravel()
+y_train = y_train[:len(X_train)]
+y_test = y_test[:len(X_test)]
+
+# print(features_train.isna().sum())
+
+# # # Extract features from normalized training data
+# train_features = pd.DataFrame()
+# for j in range(0, len(normalizedData_train) - 500, 500):
+#     df = extract_features(normalizedData_train.iloc[j:j+500], 500)
+#     train_features = pd.concat([train_features, df])
+
+# # Extract features from normalized testing data
+# test_features = pd.DataFrame()
+# for j in range(0, len(normalizedData_test) - 500, 500):
+#     df = extract_features(normalizedData_test.iloc[j:j+500], 500)
+#     test_features = pd.concat([test_features, df])
+
+
+
+# print(train_features.isna().sum())
+# train_features = train_features.iloc[499:,:]
+# print(train_features.isna().sum())
+# test_features = test_features.iloc[499:,:]
+# print(train_features)
+# print(test_features)
+
+# train_features.fillna(method = 'ffill',inplace=True)
+# test_features.fillna(method = 'ffill',inplace=True)
+
+# print(train_features.isna().sum())
+
+# y_train = y_train.iloc[:len(train_features)]
+# y_test = y_test.iloc[:len(test_features)]
+dtc = DecisionTreeClassifier()
+dtc.fit(X_train, y_train)
 
 with open('model.pkl', 'wb') as file:
-     pickle.dump(clf, file)
+      pickle.dump(dtc, file)
 
-y_pred = clf.predict(test_features)
-y_prob = clf.predict_proba(test_features)
-print(classification_report(y_test, y_pred))
+y_pred = dtc.predict(X_test)
+y_prob = dtc.predict_proba(X_test)
+# print(classification_report(y_test, y_pred))
 print('y_pred is:',y_pred)
 print('y_clf_prob is:',y_prob)
 

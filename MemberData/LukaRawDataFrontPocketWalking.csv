@@ -1,4 +1,4 @@
-"Time (s)","Linear Acceleration x (m/s^2)","Linear Acceleration y (m/s^2)","Linear Acceleration z (m/s^2)","Absolute acceleration (m/s^2)"
+"Time (s)","x","y","z","total_acceleration"
 1.01E-02,8.86E-01,8.42E-01,-2.14E+00,2.46E+00
 2.01E-02,5.49E-01,9.00E-01,-2.23E+00,2.47E+00
 3.01E-02,2.58E-01,9.94E-01,-1.90E+00,2.16E+00
