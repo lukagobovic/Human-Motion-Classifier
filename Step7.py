@@ -4,30 +4,23 @@ import numpy as np
 from sklearn import preprocessing
 import pickle
 
-def normalizeData(data,windowSize):
+def normalizeData(data, windowSize, mean=None, std=None):
     q1 = data.quantile(0.25)
     q3 = data.quantile(0.75)
     iqr = q3 - q1
     data[(data < (q1 - 1.5 * iqr)) | (data > (q3 + 1.5 * iqr))] = np.nan
-
-    data.interpolate(method = 'linear',inplace=True)
-
-    data = data.rolling(windowSize,center = True).mean()
-
-    data.fillna(method = 'ffill',inplace=True)
-
-    data = data.loc[5:,:]
-
-    x = data.values #returns a numpy array
-    min_max_scaler = preprocessing.MinMaxScaler()
-    x_scaled = min_max_scaler.fit_transform(x)
-    dataNew = pd.DataFrame(x_scaled)
-
+    data.interpolate(method='linear', inplace=True)
+    data = data.rolling(windowSize, center=True).mean()
+    data.fillna(method='ffill', inplace=True)
+    if mean is not None and std is not None:
+        dataNew = (data - mean) / std
+    else:
+        dataNew = (data - data.mean()) / data.std()
     return dataNew
 
-def extract_features_walking(data, wsize):
+def extract_features(data, wsize):
     features = []
-    xyz_data = data.iloc[:, 1:4].rolling(window=wsize)
+    xyz_data = data.iloc[:, 1:4].rolling(window=wsize, center=True)
     features.append(xyz_data.mean())
     features.append(xyz_data.std())
     features.append(xyz_data.max())
@@ -36,28 +29,31 @@ def extract_features_walking(data, wsize):
     features.append(xyz_data.var())
     features.append(xyz_data.kurt())
     features.append(xyz_data.skew())
-
+    features.append(xyz_data.max()-xyz_data.min())
     features = np.hstack((xyz_data.mean(), xyz_data.std(), xyz_data.max(),
-                               xyz_data.min(), xyz_data.median(), xyz_data.var(),  xyz_data.kurt(), xyz_data.skew()))
-
+                               xyz_data.min(), xyz_data.median(), xyz_data.var(),  
+                               xyz_data.kurt(), xyz_data.skew(),(xyz_data.max()-xyz_data.min())
+                               ))
     np.random.shuffle(features)
     datFrame = pd.DataFrame(features)
     return datFrame
-
 with open('model.pkl', 'rb') as f:
     model = pickle.load(f)
 
-fileName = 'LukaRawDataJumping'
+fileName = 'LukaRawDataWalkingJacket'
 
 # Load the feature data
 originalData = pd.read_csv('MemberData/'+fileName+'.csv')
-normalizedData = normalizeData(originalData,10)
+mean = originalData.mean()
+std = originalData.std()
+normalizedData = normalizeData(originalData,10,mean,std)
 tempData = pd.DataFrame()
 for j in range(0, len(normalizedData) - 500, 500):
-    df = extract_features_walking(normalizedData.iloc[j:j+500-1, :],10)
+    df = extract_features(normalizedData.iloc[j:j+500-1, :],10)
     tempData = pd.concat([tempData,df])
-tempData.interpolate(method = 'linear',inplace=True)
-X = tempData.iloc[:,0:24]
+# tempData.interpolate(method = 'linear',inplace=True)
+tempData = tempData.fillna(tempData.mean())
+X = tempData.iloc[:,0:18]
 y_pred = model.predict(X)
 
 # Make predictions

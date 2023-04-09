@@ -2,28 +2,18 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
 import h5py
-from scipy.signal import savgol_filter
-from sklearn import preprocessing
-from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, recall_score, ConfusionMatrixDisplay, roc_curve, RocCurveDisplay, roc_auc_score, f1_score, confusion_matrix
-from sklearn.model_selection import train_test_split
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
 from scipy.stats import skew
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.linear_model import LogisticRegression
 import scikitplot as skplt
 import pickle
 
-
 # # Load data from HDF5 file
 with h5py.File('ProjectFileTest.hdf5', 'r') as f:
-    X_train = f['dataset/train'][:,0:24]
+    X_train = f['dataset/train'][:,0:27]
     y_train = f['dataset/train'][:,-1]
-    X_test = f['dataset/test'][:,0:24]
+    X_test = f['dataset/test'][:,0:27]
     y_test = f['dataset/test'][:,-1]
-
-print(X_train)
 
 dtc = DecisionTreeClassifier()
 dtc.fit(X_train, y_train)
@@ -39,7 +29,6 @@ print('y_clf_prob is:',y_prob)
 
 acc = accuracy_score(y_test,y_pred)
 print('accuracy is:',acc)
-
 
 recall = recall_score(y_test,y_pred)
 print('recall is:',recall)
