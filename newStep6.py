@@ -1,10 +1,12 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score , confusion_matrix
 from scipy.signal import savgol_filter
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.pipeline import make_pipeline
 import pickle
 from sklearn.metrics import classification_report
 from sklearn.metrics import recall_score, ConfusionMatrixDisplay, roc_curve, RocCurveDisplay, roc_auc_score, f1_score
@@ -45,6 +47,8 @@ for df in test_labels:
 
 # # Preprocess the data
 def preprocess_data(data):
+  data = data.rolling(5).mean().dropna()
+
   # Remove outliers
   data = data[(np.abs(data.x - data.x.mean()) / data.x.std()) < 2.5]
   data = data[(np.abs(data.y - data.y.mean()) / data.y.std()) < 2.5]
@@ -54,36 +58,43 @@ def preprocess_data(data):
   data = (data - data.mean()) / data.std()
 
   # Extract features
-  features = [
-    np.max(data.x),
-    np.min(data.x),
-    np.ptp(data.x),
-    np.mean(data.x),
-    np.median(data.x),
-    np.var(data.x),
-    np.std(data.x),
-    np.max(data.y),
-    np.min(data.y),
-    np.ptp(data.y),
-    np.mean(data.y),
-    np.median(data.y),
-    np.var(data.y),
-    np.std(data.y),
-    np.max(data.z),
-    np.min(data.z),
-    np.ptp(data.z),
-    np.mean(data.z),
-    np.median(data.z),
-    np.var(data.z),
-    np.std(data.z),
-    np.max(data.total_acceleration),
-    np.min(data.total_acceleration),
-    np.ptp(data.total_acceleration),
-    np.mean(data.total_acceleration),
-    np.median(data.total_acceleration),
-    np.var(data.total_acceleration),
-    np.std(data.total_acceleration),
-  ]
+  # Extract features for each window of 500 rows
+  window_size = 500
+  num_windows = len(data) // window_size
+  features = []
+  for i in range(num_windows):
+    window_data = data.iloc[i*window_size:(i+1)*window_size]
+    window_features = [
+      np.max(window_data.x),
+      np.min(window_data.x),
+      np.ptp(window_data.x),
+      np.mean(window_data.x),
+      np.median(window_data.x),
+      np.var(window_data.x),
+      np.std(window_data.x),
+      np.max(window_data.y),
+      np.min(window_data.y),
+      np.ptp(window_data.y),
+      np.mean(window_data.y),
+      np.median(window_data.y),
+      np.var(window_data.y),
+      np.std(window_data.y),
+      np.max(window_data.z),
+      np.min(window_data.z),
+      np.ptp(window_data.z),
+      np.mean(window_data.z),
+      np.median(window_data.z),
+      np.var(window_data.z),
+      np.std(window_data.z),
+      np.max(window_data.total_acceleration),
+      np.min(window_data.total_acceleration),
+      np.ptp(window_data.total_acceleration),
+      np.mean(window_data.total_acceleration),
+      np.median(window_data.total_acceleration),
+      np.var(window_data.total_acceleration),
+      np.std(window_data.total_acceleration),
+    ]
+    features.append(window_features)
 
   return features
 
@@ -94,7 +105,8 @@ test_features = [preprocess_data(segment) for segment in test_segments]
 test_labels = [segment.activity.values[0] for segment in test_labels]
 
 # Train a logistic regression model
-model = DecisionTreeClassifier()
+l_reg = LogisticRegression(max_iter=100000)
+model = make_pipeline(StandardScaler(),l_reg)
 model.fit(train_features, train_labels)
 
 with open('model.pkl', 'wb') as file:

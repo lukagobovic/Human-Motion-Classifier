@@ -5,6 +5,7 @@ from sklearn import preprocessing
 import pickle
 
 def preprocess_data(data):
+  data = data.rolling(window_size).mean().dropna()
   # Remove outliers
   data = data[(np.abs(data.x - data.x.mean()) / data.x.std()) < 3]
   data = data[(np.abs(data.y - data.y.mean()) / data.y.std()) < 3]
@@ -50,7 +51,7 @@ def preprocess_data(data):
 with open('model.pkl', 'rb') as f:
     model = pickle.load(f)
 
-fileName = 'LukaRawDataBackPocketWalking'
+fileName = 'LukaRawDataWalkingJacket'
 
 # Load the feature data
 originalData = pd.read_csv('MemberData/'+fileName+'.csv')
