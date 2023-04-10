@@ -30,9 +30,16 @@ with h5py.File('ProjectFileTest.hdf5', 'r') as f:
 # print(y_train)
 # print(y_test)
 train_segments = X_train
+# print(len(train_segments))
+# print(train_segments)
 test_segments = X_test
+# print(len(test_segments))
 train_labels = y_train
+# print(len(train_labels))
 test_labels = y_test
+# print(len(test_labels))
+
+
 for df in train_segments:
     df.rename(columns={0: "x", 1: "y", 2: "z", 3: "total_acceleration"}, inplace=True)
 
@@ -56,10 +63,11 @@ def preprocess_data(data):
 
   # Normalize the data
   data = (data - data.mean()) / data.std()
+  data = data[:449]
 
   # Extract features
   # Extract features for each window of 500 rows
-  window_size = 5
+  window_size = 10
   num_windows = len(data) // window_size
   features = np.empty((num_windows, 28))
   for i in range(num_windows):
@@ -98,10 +106,26 @@ def preprocess_data(data):
 
   return features
 
+
+train_labels = [label[:45] for label in train_labels]
+test_labels = [label[:45] for label in test_labels]
+# print(test_labels)
+
 train_features = np.concatenate([preprocess_data(segment) for segment in train_segments])
 test_features = np.concatenate([preprocess_data(segment) for segment in test_segments])
-train_labels = [segment.activity.values[0] for segment in train_labels]
-test_labels = [segment.activity.values[0] for segment in test_labels]
+train_features = train_features.reshape((train_features.shape[0],train_features.shape[1]))
+test_features = test_features.reshape((test_features.shape[0],test_features.shape[1]))
+
+scaler = StandardScaler()
+train_features = scaler.fit_transform(train_features)
+test_features = scaler.transform(test_features)
+
+
+# print(len(train_labels))
+# print(len(test_labels))
+# print(len(train_features[0]))
+# print(len(test_features[0]))
+
 
 
 # Train a logistic regression model
