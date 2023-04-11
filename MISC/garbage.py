@@ -68,7 +68,9 @@ def preprocess_data(data):
   # Extract features
   # Extract features for each window of 500 rows
   window_size = 10
+  print(len(data))
   num_windows = len(data) // window_size
+  print(num_windows)
   features = []
   for i in range(num_windows):
     window_data = data.iloc[i*window_size:(i+1)*window_size]

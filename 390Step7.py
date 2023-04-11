@@ -65,7 +65,7 @@ def preprocess_data(data):
 with open('model.pkl', 'rb') as f:
     model = pickle.load(f)
 
-fileName = 'LukaRawDataWalkingJacket'
+fileName = 'BennettRawDataJacketWalking'
 
 # Load the feature data
 originalData = pd.read_csv('MemberData/'+fileName+'.csv',nrows = 18000)

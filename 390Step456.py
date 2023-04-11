@@ -43,15 +43,6 @@ for df in test_labels:
 window_size = 5
 # # Preprocess the data
 def preprocess_data(data):
-  data = data.rolling(window_size).mean().dropna()
-  # Remove outliers
-  data = data[(np.abs(data.x - data.x.mean()) / data.x.std()) < 3]
-  data = data[(np.abs(data.y - data.y.mean()) / data.y.std()) < 3]
-  data = data[(np.abs(data.z - data.z.mean()) / data.z.std()) < 3]
-
-  # Normalize the data
-  data = (data - data.mean()) / data.std()
-
   # Extract features
   features = [
     np.max(data.x),
@@ -107,7 +98,7 @@ test_labels = [segment.activity.values[0] for segment in test_labels]
 # Train a logistic regression model
 #clf = svm.SVC(kernel='linear', probability=True)
 l_reg = LogisticRegression(max_iter=10000)
-model = make_pipeline(StandardScaler(),l_reg)
+model = make_pipeline(l_reg)
 model.fit(train_features, train_labels)
 
 with open('model.pkl', 'wb') as file:

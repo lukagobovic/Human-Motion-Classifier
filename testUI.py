@@ -7,13 +7,16 @@ from tkinter import filedialog
 from matplotlib.figure import Figure
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import StandardScaler
+from sklearn import preprocessing
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pickle
 from CTkMessagebox import CTkMessagebox
+from scipy.stats import skew, kurtosis
 
 
-ttk.set_appearance_mode("Light")  # Modes: "System" (standard), "Dark", "Light"
+
+ttk.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
 ttk.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
 
 with open('model.pkl', 'rb') as f:
@@ -22,15 +25,6 @@ with open('model.pkl', 'rb') as f:
 window_size = 5
 # Define the preprocessing function
 def preprocess_data(data):
-  data = data.rolling(window_size).mean().dropna()
-  # Remove outliers
-  data = data[(np.abs(data.x - data.x.mean()) / data.x.std()) < 3]
-  data = data[(np.abs(data.y - data.y.mean()) / data.y.std()) < 3]
-  data = data[(np.abs(data.z - data.z.mean()) / data.z.std()) < 3]
-
-  # Normalize the data
-  data = (data - data.mean()) / data.std()
-
   # Extract features
   features = [
     np.max(data.x),
@@ -38,62 +32,44 @@ def preprocess_data(data):
     np.ptp(data.x),
     np.mean(data.x),
     np.median(data.x),
+    skew(data.x),
     np.var(data.x),
     np.std(data.x),
+    kurtosis(data.x),
+    np.sqrt(np.mean(data.x ** 2)),
     np.max(data.y),
     np.min(data.y),
     np.ptp(data.y),
     np.mean(data.y),
     np.median(data.y),
+    skew(data.y),
     np.var(data.y),
     np.std(data.y),
+    kurtosis(data.y),
+    np.sqrt(np.mean(data.y ** 2)),
     np.max(data.z),
     np.min(data.z),
     np.ptp(data.z),
     np.mean(data.z),
     np.median(data.z),
+    skew(data.z),
     np.var(data.z),
     np.std(data.z),
+    kurtosis(data.z),
+    np.sqrt(np.mean(data.z ** 2)),
     np.max(data.total_acceleration),
     np.min(data.total_acceleration),
     np.ptp(data.total_acceleration),
     np.mean(data.total_acceleration),
     np.median(data.total_acceleration),
+    skew(data.total_acceleration),
     np.var(data.total_acceleration),
     np.std(data.total_acceleration),
+    kurtosis(data.total_acceleration),
+    np.sqrt(np.mean(data.total_acceleration ** 2))
   ]
 
   return features
-
-def predict(file_path):
-  # Load the data
-  try:
-    data = pd.read_csv(file_path, names=['x', 'y', 'z'])
-  except Exception as e:
-    CTkMessagebox.showerror("Error", "Failed to load data. Error message: {}".format(str(e)))
-    return
-
-  # Preprocess the data
-  try:
-    features = preprocess_data(data)
-  except Exception as e:
-    CTkMessagebox.showerror("Error", "Failed to preprocess data. Error message: {}".format(str(e)))
-    return
-
-  # Make predictions
-  try:
-    predictions = model.predict(features)
-  except Exception as e:
-    CTkMessagebox.showerror("Error", "Failed to make predictions. Error message: {}".format(str(e)))
-    return
-
-  # Save the results
-  try:
-    output_path = filedialog.asksaveasfilename(title="Save output file", defaultextension=".csv")
-    np.savetxt(output_path, predictions, delimiter=",", header="label", comments="")
-  except Exception as e:
-    CTkMessagebox.showerror("Error", "Failed to save output file. Error message: {}".format(str(e)))
-    return
 
   # Show a message box with the path to the output file
   CTkMessagebox.showinfo("Success", "Predictions saved to {}".format(output_path))
@@ -160,8 +136,9 @@ class App(ttk.CTk):
 
 
     def on_closing(self):
-        if CTkMessagebox.askokcancel("Quit", "Do you want to quit?"):
+        if tkinter.messagebox.askokcancel("Quit", "Do you want to quit?"):
             self.destroy()
+            exit()
 
          # set protocol to call on_closing() function when window is closed
 
@@ -179,24 +156,38 @@ class App(ttk.CTk):
         #output_file_path = self.output_file_entry.get()
 
         # Load data
-        data = pd.read_csv(input_file_path, delimiter=',')
-
-        # Preprocess data
+        originalData = pd.read_csv(input_file_path, delimiter=',')
         window_size = 5
+        df = originalData.iloc[:,1:]
+        q1 = df.quantile(0.25)
+        q3 = df.quantile(0.75)
+        iqr = q3 - q1
+        df[(df < (q1 - 1.5 * iqr)) | (df > (q3 + 1.5 * iqr))] = np.nan
+        df.interpolate(method='linear', inplace=True)
+
+        data = df.rolling(5).mean().dropna()
+                    # Remove outliers
+                    # Normalize the data
+        scaler = preprocessing.MinMaxScaler()
+        data.iloc[:,1:-2] = scaler.fit_transform(data.iloc[:,1:-2])
+                # data = (data - data.mean()) / data.std()
+
+        print(data)
+        # Load the feature data
 
         # Segment the data into windows of a given size
         def segment_data(data, window_size):
-            num_samples = int(np.floor(data.shape[0] / (window_size * 100)))  # 50 Hz sampling rate
-            segments = []
-            for i in range(num_samples):
-                start_idx = i * window_size * 100
-                end_idx = start_idx + window_size * 100
-                segment = data.iloc[start_idx:end_idx]
-                segments.append(segment)
-            return segments
+          num_samples = int(np.floor(data.shape[0] / (window_size * 100)))  # 50 Hz sampling rate
+          segments = []
+          for i in range(num_samples):
+            start_idx = i * window_size * 100
+            end_idx = start_idx + window_size * 100
+            segment = data.iloc[start_idx:end_idx]
+            segments.append(segment)
+          return segments
 
         # Segment the data and shuffle it
-        segments = segment_data(data, window_size)
+        segments = segment_data(originalData, window_size)
         np.random.shuffle(segments)
 
         train_features = [preprocess_data(segment) for segment in segments]
@@ -209,11 +200,11 @@ class App(ttk.CTk):
         if predicted_class == 0:
             print("This CSV contains walking data.")
             data['Walking(0)/Jumping(1)'] = 0
-            data.to_csv('OutputData/'+os.path.basename(input_file_path), index=False)
+            originalData.to_csv('OutputData/'+os.path.basename(input_file_path), index=False)
         else:
             print("This CSV contains jumping data.")
             data['Walking(0)/Jumping(1)'] = 1
-            data.to_csv('OutputData/'+os.path.basename(input_file_path), index=False)
+            originalData.to_csv('OutputData/'+os.path.basename(input_file_path), index=False)
 
         # Write output file
         # with open(output_file_path, 'w') as f:
@@ -223,11 +214,10 @@ class App(ttk.CTk):
 
         # Plot predictions
         ax = self.fig.add_subplot(111)
-        ax.plot(data.iloc[:,1:-1])
+        ax.plot(data.iloc[0:1000,1:5])
         ax.set_xlabel('Window')
         ax.set_ylabel('Probability')
-        # ax.set_ylim([0, 1])
-        ax.legend(['walking', 'jumping'], loc='upper right')
+        #ax.legend(['walking', 'jumping'], loc='upper right')
         self.canvas.draw()
 
 welcome_root = ttk.CTk()
