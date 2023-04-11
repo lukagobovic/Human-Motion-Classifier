@@ -12,6 +12,9 @@ from sklearn.metrics import classification_report
 from sklearn.metrics import recall_score, ConfusionMatrixDisplay, roc_curve, RocCurveDisplay, roc_auc_score, f1_score
 from matplotlib import pyplot as plt
 import h5py
+from scipy.stats import skew, kurtosis
+from sklearn import svm
+
 
 with h5py.File('ProjectFile.hdf5', 'r') as f:
     # Read train data into a list of dataframes
@@ -56,29 +59,41 @@ def preprocess_data(data):
     np.ptp(data.x),
     np.mean(data.x),
     np.median(data.x),
+    skew(data.x),
     np.var(data.x),
     np.std(data.x),
+    kurtosis(data.x),
+    np.sqrt(np.mean(data.x ** 2)),
     np.max(data.y),
     np.min(data.y),
     np.ptp(data.y),
     np.mean(data.y),
     np.median(data.y),
+    skew(data.y),
     np.var(data.y),
     np.std(data.y),
+    kurtosis(data.y),
+    np.sqrt(np.mean(data.y ** 2)),
     np.max(data.z),
     np.min(data.z),
     np.ptp(data.z),
     np.mean(data.z),
     np.median(data.z),
+    skew(data.z),
     np.var(data.z),
     np.std(data.z),
+    kurtosis(data.z),
+    np.sqrt(np.mean(data.z ** 2)),
     np.max(data.total_acceleration),
     np.min(data.total_acceleration),
     np.ptp(data.total_acceleration),
     np.mean(data.total_acceleration),
     np.median(data.total_acceleration),
+    skew(data.total_acceleration),
     np.var(data.total_acceleration),
     np.std(data.total_acceleration),
+    kurtosis(data.total_acceleration),
+    np.sqrt(np.mean(data.total_acceleration ** 2))
   ]
 
   return features
@@ -90,7 +105,8 @@ test_features = [preprocess_data(segment) for segment in test_segments]
 test_labels = [segment.activity.values[0] for segment in test_labels]
 
 # Train a logistic regression model
-l_reg = LogisticRegression(max_iter=100000)
+#clf = svm.SVC(kernel='linear', probability=True)
+l_reg = LogisticRegression(max_iter=10000)
 model = make_pipeline(StandardScaler(),l_reg)
 model.fit(train_features, train_labels)
 
@@ -101,9 +117,9 @@ with open('model.pkl', 'wb') as file:
 pred_labels = model.predict(test_features)
 y_prob = model.predict_proba(test_features)
 accuracy = accuracy_score(test_labels, pred_labels)
-print('Accuracy:', accuracy)
 print(classification_report(test_labels, pred_labels))
 recall = recall_score(test_labels,pred_labels)
+print('Accuracy:', accuracy)
 print('recall is:',recall)
 
 cm = confusion_matrix(test_labels,pred_labels)

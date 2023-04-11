@@ -53,7 +53,7 @@ window_size = 5
 
 # Segment the data into windows of a given size
 def segment_data(data, window_size):
-  num_samples = int(np.floor(data.shape[0] / (window_size * 100)))  # 50 Hz sampling rate
+  num_samples = int(np.floor(data.shape[0] / (window_size * 100)))  # 100 Hz sampling rate
   segments = []
   for i in range(num_samples):
     start_idx = i * window_size * 100

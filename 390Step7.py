@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from sklearn import preprocessing
 import pickle
+from scipy.stats import skew,kurtosis
 
 def preprocess_data(data):
   data = data.rolling(window_size).mean().dropna()
@@ -21,37 +22,50 @@ def preprocess_data(data):
     np.ptp(data.x),
     np.mean(data.x),
     np.median(data.x),
+    skew(data.x),
     np.var(data.x),
     np.std(data.x),
+    kurtosis(data.x),
+    np.sqrt(np.mean(data.x ** 2)),
     np.max(data.y),
     np.min(data.y),
     np.ptp(data.y),
     np.mean(data.y),
     np.median(data.y),
+    skew(data.y),
     np.var(data.y),
     np.std(data.y),
+    kurtosis(data.y),
+    np.sqrt(np.mean(data.y ** 2)),
     np.max(data.z),
     np.min(data.z),
     np.ptp(data.z),
     np.mean(data.z),
     np.median(data.z),
+    skew(data.z),
     np.var(data.z),
     np.std(data.z),
+    kurtosis(data.z),
+    np.sqrt(np.mean(data.z ** 2)),
     np.max(data.total_acceleration),
     np.min(data.total_acceleration),
     np.ptp(data.total_acceleration),
     np.mean(data.total_acceleration),
     np.median(data.total_acceleration),
+    skew(data.total_acceleration),
     np.var(data.total_acceleration),
     np.std(data.total_acceleration),
+    kurtosis(data.total_acceleration),
+    np.sqrt(np.mean(data.total_acceleration ** 2))
   ]
+
 
   return features
 
 with open('model.pkl', 'rb') as f:
     model = pickle.load(f)
 
-fileName = 'LukaRawDataFrontPocketWalking'
+fileName = 'LukaRawDataWalkingJacket'
 
 # Load the feature data
 originalData = pd.read_csv('MemberData/'+fileName+'.csv',nrows = 18000)
