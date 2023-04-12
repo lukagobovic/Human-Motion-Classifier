@@ -25,57 +25,9 @@ df7 = pd.read_csv('MemberData/BennettRawDataBackPocketWalking.csv',nrows = 27000
 df8 = pd.read_csv('MemberData/BennettRawDataFrontPocketWalking.csv',nrows = 27000)
 df9 = pd.read_csv('MemberData/BennettRawDataJacketWalking.csv',nrows = 27000)
 
-listOfWalkingData = [df1,df2,df3,df4,df5,df6,df7,df8,df9]
-
-for df in listOfWalkingData:
-  df = df.iloc[:,1:]
-  q1 = df.quantile(0.25)
-  q3 = df.quantile(0.75)
-  iqr = q3 - q1
-  df[(df < (q1 - 1.5 * iqr)) | (df > (q3 + 1.5 * iqr))] = np.nan
-
-  df.interpolate(method='linear', inplace=True)
-  
-  data = df.rolling(5).mean().dropna()
-    # Remove outliers
-    # Normalize the data
-  scaler = MinMaxScaler()
-  data.iloc[:,1:-2] = scaler.fit_transform(data.iloc[:,1:-2])
-
-listOfWalkingDataDF = pd.DataFrame()
-for df in listOfWalkingData:
-  listOfWalkingDataDF = pd.concat([listOfWalkingDataDF,df])
-
-# print(listOfWalkingDataDF)
-listOfWalkingDataDF['activity'] = 0  
-
-listOfJumpingData = pd.DataFrame()
 df10 = pd.read_csv('MemberData/LukaRawDataJumping.csv',nrows = 30000)
 df11 = pd.read_csv('MemberData/BennettRawDataJumping.csv')
 df12 = pd.read_csv('MemberData/CJRawDataJumping.csv',nrows = 16500)
-listOfJumpingData = [df10,df11,df12]
-
-for df in listOfJumpingData:
-  df = df.iloc[:,1:]
-  q1 = df.quantile(0.25)
-  q3 = df.quantile(0.75)
-  iqr = q3 - q1
-  df[(df < (q1 - 1.5 * iqr)) | (df > (q3 + 1.5 * iqr))] = np.nan
-
-  df.interpolate(method='linear', inplace=True)
-  
-  data = df.rolling(5).mean().dropna()
-    # Remove outliers
-    # Normalize the data
-  scaler = MinMaxScaler()
-  data.iloc[:,1:-2] = scaler.fit_transform(data.iloc[:,1:-2])
-
-listOfJumpingDataDF = pd.DataFrame()
-for df in listOfJumpingData:
-  listOfJumpingDataDF = pd.concat([listOfJumpingDataDF,df])
-
-# print(listOfWalkingDataDF)
-listOfJumpingDataDF['activity'] = 1 
 
 LukaWalkingData = pd.concat(
     [df1,df2,df3]
@@ -93,6 +45,55 @@ all_data = {
     'Bennett': {'walking': BennettWalkingData,'jumping': df11},
     'CJ': {'walking': CJWalkingData, 'jumping': df12}
 }
+
+listOfWalkingData = [df1,df2,df3,df4,df5,df6,df7,df8,df9]
+
+for df in listOfWalkingData:
+  df = df.iloc[:,1:]
+  Q1 = df.quantile(0.20)
+  Q3 = df.quantile(0.80)
+  IQR = Q3 - Q1
+  df = df[~((df < (Q1 - 1.5 * IQR)) | (df > (Q3 + 1.5 * IQR)))]
+
+  df.interpolate(method='linear', inplace=True)
+  
+  data = df.rolling(5).mean().dropna()
+    # Remove outliers
+    # Normalize the data
+  scaler = MinMaxScaler()
+  data.iloc[:,1:-2] = scaler.fit_transform(data.iloc[:,1:-2])
+
+listOfWalkingDataDF = pd.DataFrame()
+for df in listOfWalkingData:
+  listOfWalkingDataDF = pd.concat([listOfWalkingDataDF,df])
+
+# print(listOfWalkingDataDF)
+listOfWalkingDataDF['activity'] = 0  
+
+listOfJumpingData = pd.DataFrame()
+listOfJumpingData = [df10,df11,df12]
+
+for df in listOfJumpingData:
+  df = df.iloc[:,1:]
+  Q1 = df.quantile(0.20)
+  Q3 = df.quantile(0.80)
+  IQR = Q3 - Q1
+  df = df[~((df < (Q1 - 1.5 * IQR)) | (df > (Q3 + 1.5 * IQR)))]
+
+  df.interpolate(method='linear', inplace=True)
+  
+  data = df.rolling(5).mean().dropna()
+    # Remove outliers
+    # Normalize the data
+  scaler = MinMaxScaler()
+  data.iloc[:,1:-2] = scaler.fit_transform(data.iloc[:,1:-2])
+
+listOfJumpingDataDF = pd.DataFrame()
+for df in listOfJumpingData:
+  listOfJumpingDataDF = pd.concat([listOfJumpingDataDF,df])
+
+# print(listOfWalkingDataDF)
+listOfJumpingDataDF['activity'] = 1 
 
 
 lisfOfCombinedData = pd.concat([listOfWalkingDataDF,listOfJumpingDataDF])
@@ -137,3 +138,5 @@ with h5py.File('./ProjectFile.hdf5', 'w') as f:
 
     dataset_group.create_dataset('train',data=[s.values for s in train_segments])
     dataset_group.create_dataset('test',data=[s.values for s in test_segments])
+
+

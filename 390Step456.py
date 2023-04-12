@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score, train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score , confusion_matrix
@@ -14,6 +14,8 @@ from matplotlib import pyplot as plt
 import h5py
 from scipy.stats import skew, kurtosis
 from sklearn import svm
+from sklearn.model_selection import learning_curve
+
 
 
 with h5py.File('ProjectFile.hdf5', 'r') as f:
@@ -95,14 +97,51 @@ train_labels = [segment.activity.values[0] for segment in train_labels]
 test_features = [preprocess_data(segment) for segment in test_segments]
 test_labels = [segment.activity.values[0] for segment in test_labels]
 
+
+# train_features = [preprocess_data(segment) for segment in train_segments]
+# train_labels = [segment.activity.values[0] for segment in train_labels]
+
+# test_features = [preprocess_data(segment) for segment in test_segments]
+# test_labels = [segment.activity.values[0] for segment in test_labels]
+
 # Train a logistic regression model
-#clf = svm.SVC(kernel='linear', probability=True)
-l_reg = LogisticRegression(max_iter=10000)
-model = make_pipeline(l_reg)
+# model = svm.SVC(kernel='linear', probability=True)
+model = DecisionTreeClassifier()
+# l_reg = LogisticRegression(max_iter=10000,random_state=42)
+# model = make_pipeline(l_reg)
 model.fit(train_features, train_labels)
 
 with open('model.pkl', 'wb') as file:
       pickle.dump(model, file)
+
+
+scores = cross_val_score(model, train_features+test_features, train_labels+test_labels, cv=5)
+print(scores)
+print("%0.2f accuracy with a standard deviation of %0.2f" % (scores.mean(), scores.std()))
+
+
+
+train_sizes = np.linspace(0.1, 1.0, 10)
+# Calculate the learning curves using the learning_curve function
+train_sizes, train_scores, test_scores = learning_curve(model, train_features, train_labels, cv=5, train_sizes=train_sizes)
+
+train_mean = np.mean(train_scores, axis=1)
+train_std = np.std(train_scores, axis=1)
+test_mean = np.mean(test_scores, axis=1)
+test_std = np.std(test_scores, axis=1)
+
+
+plt.style.use('seaborn')
+plt.figure(figsize=(8, 6))
+plt.plot(train_sizes, train_mean, label='Training score')
+plt.plot(train_sizes, test_mean, label='Cross-validation score')
+plt.fill_between(train_sizes, train_mean - train_std, train_mean + train_std, alpha=0.1)
+plt.fill_between(train_sizes, test_mean - test_std, test_mean + test_std, alpha=0.1)
+plt.xlabel('Training set size')
+plt.ylabel('Accuracy score')
+plt.title('Logistic Regression Learning Curves')
+plt.legend()
+plt.show()
 
 # Test the model
 pred_labels = model.predict(test_features)

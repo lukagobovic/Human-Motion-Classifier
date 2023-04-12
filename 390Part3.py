@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 def read_data(activity):
     with h5py.File('./ProjectFile.hdf5', 'r') as f:
@@ -29,9 +31,62 @@ def plot_data(ax, data, title, color, label):
 
 # Read the data
 jumping_data = read_data('jumping')
-# jumping_data = jumping_data[1000:2000,0:5]
 walking_data = read_data('walking')
-# walking_data = walking_data[1000:2000,0:5]
+
+jumping_data_df = pd.DataFrame(jumping_data)
+jumping_data_df = jumping_data_df.iloc[:,1:]
+walking_data_df = pd.DataFrame(walking_data)
+walking_data_df = walking_data_df.iloc[:,1:]
+jumping_data_df.rename(columns={1: "x", 2: "y", 3: "z", 4: "total_acceleration"}, inplace=True)
+walking_data_df.rename(columns={1: "x", 2: "y", 3: "z", 4: "total_acceleration"}, inplace=True)
+
+
+#HEATMAP 
+fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(12, 8))
+corr_matrix_jumping = jumping_data_df.corr()
+corr_matrix_walking = walking_data_df.corr()
+
+# Create heatmap using seaborn library on the first axis
+sns.heatmap(corr_matrix_jumping, annot=True, cmap='coolwarm', ax=ax1)
+ax1.set_title('Jumping Correlation Heatmap')
+sns.heatmap(corr_matrix_walking, annot=True, cmap='coolwarm', ax=ax2)
+ax2.set_title('Walking Correlation Heatmap')
+fig.suptitle('Correlation Between Axes Heatmap', fontsize=16)
+fig.tight_layout()
+plt.show()
+
+# Pair Plots
+g = sns.pairplot(walking_data_df)
+g.fig.suptitle("Walking Pair Plot", y=1.08) # y= some height>1
+fig.tight_layout()
+plt.show()
+
+fig = sns.pairplot(jumping_data_df)
+g.fig.suptitle("Jumping Pair Plot", y=1.08) # y= some height>1
+fig.tight_layout()
+plt.show()
+
+
+
+fig =  sns.displot(jumping_data_df, kind="kde", bw_adjust=.25, fill = True)
+plt.title("Jumping Acceleration Magnitude Density")
+plt.xlabel("Magnitude")
+plt.ylabel("Density") 
+fig.tight_layout()
+plt.show()
+
+fig =  sns.displot(walking_data_df, kind="kde", bw_adjust=.25, fill = True)
+plt.title("Walking Acceleration Magnitude Density")
+plt.xlabel("Magnitude")
+plt.ylabel("Density") 
+fig.tight_layout()
+plt.show()
+
+
+
+sns.displot(jumping_data_df, x="x", y="y")
+plt.show()
+
 
 # Time series plot of acceleration magnitude for walking and jumping
 fig, ax = plt.subplots(figsize=(12, 8))
@@ -40,48 +95,48 @@ plot_data(ax, jumping_data, 'Acceleration Magnitude vs Time', 'red', 'Jumping')
 fig.tight_layout()
 plt.show()
 
-# Histogram of acceleration magnitudes for walking and jumping
+# # Histogram of acceleration magnitudes for walking and jumping
 
-# Scatter plot of x vs y, x vs z, and y vs z for both walking and jumping data
-fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(18, 6))
-axes[0].scatter(walking_data[:, 1], walking_data[:, 2], color='blue', label='Walking', alpha=0.5)
-axes[0].scatter(jumping_data[:, 1], jumping_data[:, 2], color='red', label='Jumping', alpha=0.5)
-axes[0].set_title('Acceleration Y vs Acceleration X')
-axes[0].set_xlabel('Acceleration X')
-axes[0].set_ylabel('Acceleration Y')
-axes[0].legend()
+# # Scatter plot of x vs y, x vs z, and y vs z for both walking and jumping data
+# fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(18, 6))
+# axes[0].scatter(walking_data[:, 1], walking_data[:, 2], color='blue', label='Walking', alpha=0.5)
+# axes[0].scatter(jumping_data[:, 1], jumping_data[:, 2], color='red', label='Jumping', alpha=0.5)
+# axes[0].set_title('Acceleration Y vs Acceleration X')
+# axes[0].set_xlabel('Acceleration X')
+# axes[0].set_ylabel('Acceleration Y')
+# axes[0].legend()
 
-axes[1].scatter(walking_data[:, 1], walking_data[:, 3], color='blue', label='Walking', alpha=0.5)
-axes[1].scatter(jumping_data[:, 1], jumping_data[:, 3], color='red', label='Jumping', alpha=0.5)
-axes[1].set_title('Acceleration Z vs Acceleration X')
-axes[1].set_xlabel('Acceleration X')
-axes[1].set_ylabel('Acceleration Z')
-axes[1].legend()
+# axes[1].scatter(walking_data[:, 1], walking_data[:, 3], color='blue', label='Walking', alpha=0.5)
+# axes[1].scatter(jumping_data[:, 1], jumping_data[:, 3], color='red', label='Jumping', alpha=0.5)
+# axes[1].set_title('Acceleration Z vs Acceleration X')
+# axes[1].set_xlabel('Acceleration X')
+# axes[1].set_ylabel('Acceleration Z')
+# axes[1].legend()
 
-axes[2].scatter(walking_data[:, 2], walking_data[:, 3], color='blue', label='Walking', alpha=0.5)
-axes[2].scatter(jumping_data[:, 2], jumping_data[:, 3], color='red', label='Jumping', alpha=0.5)
-axes[2].set_title('Acceleration Z vs Acceleration Y')
-axes[2].set_xlabel('Acceleration Y')
-axes[2].set_ylabel('Acceleration Z')
-axes[2].legend()
+# axes[2].scatter(walking_data[:, 2], walking_data[:, 3], color='blue', label='Walking', alpha=0.5)
+# axes[2].scatter(jumping_data[:, 2], jumping_data[:, 3], color='red', label='Jumping', alpha=0.5)
+# axes[2].set_title('Acceleration Z vs Acceleration Y')
+# axes[2].set_xlabel('Acceleration Y')
+# axes[2].set_ylabel('Acceleration Z')
+# axes[2].legend()
 
-# fig.tight_layout()
-# plt.show()
+# # fig.tight_layout()
+# # plt.show()
 
-# # 3D Scatter plot of x, y, and z accelerations for both walking and jumping dat
-# fig = plt.figure(figsize=(12, 8))
-# ax = fig.add_subplot(111, projection='3d')
+# # # 3D Scatter plot of x, y, and z accelerations for both walking and jumping dat
+# # fig = plt.figure(figsize=(12, 8))
+# # ax = fig.add_subplot(111, projection='3d')
 
-# ax.scatter(walking_data[:, 1], walking_data[:, 2], walking_data[:, 3], color='blue', label='Walking', alpha=0.5)
-# ax.scatter(jumping_data[:, 1], jumping_data[:, 2], jumping_data[:, 3], color='red', label='Jumping', alpha=0.5)
+# # ax.scatter(walking_data[:, 1], walking_data[:, 2], walking_data[:, 3], color='blue', label='Walking', alpha=0.5)
+# # ax.scatter(jumping_data[:, 1], jumping_data[:, 2], jumping_data[:, 3], color='red', label='Jumping', alpha=0.5)
 
-# ax.set_title('3D Scatter Plot of Acceleration')
-# ax.set_xlabel('Acceleration X')
-# ax.set_ylabel('Acceleration Y')
-# ax.set_zlabel('Acceleration Z')
-# ax.legend()
+# # ax.set_title('3D Scatter Plot of Acceleration')
+# # ax.set_xlabel('Acceleration X')
+# # ax.set_ylabel('Acceleration Y')
+# # ax.set_zlabel('Acceleration Z')
+# # ax.legend()
 
-# plt.show()
+# # plt.show()
 
 #plotting windows
 def plot_window(walking_data, jumping_data, window_start, window_size):
@@ -102,39 +157,22 @@ window_start = 1000
 window_size = 1500
 plot_window(walking_data, jumping_data, window_start, window_size)
 
-# # Plot acceleration vs. time for a sample of walking and jumping data
-fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(10, 10))
-ax[0].plot(walking_data[:, 0], walking_data[:, 1], label='x')
-ax[0].plot(walking_data[:, 0], walking_data[:, 2], label='y')
-ax[0].plot(walking_data[:, 0], walking_data[:, 3], label='z')
-ax[0].set_xlabel('Time (s)')
-ax[0].set_ylabel('Acceleration (m/s^2)')
-ax[0].set_title('Walking Acceleration vs. Time')
-ax[0].legend()
+# # # Plot acceleration vs. time for a sample of walking and jumping data
+# fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(10, 10))
+# ax[0].plot(walking_data[:, 0], walking_data[:, 1], label='x')
+# ax[0].plot(walking_data[:, 0], walking_data[:, 2], label='y')
+# ax[0].plot(walking_data[:, 0], walking_data[:, 3], label='z')
+# ax[0].set_xlabel('Time (s)')
+# ax[0].set_ylabel('Acceleration (m/s^2)')
+# ax[0].set_title('Walking Acceleration vs. Time')
+# ax[0].legend()
 
-ax[1].plot(jumping_data[:, 0], jumping_data[:, 1], label='x')
-ax[1].plot(jumping_data[:, 0], jumping_data[:, 2], label='y')
-ax[1].plot(jumping_data[:, 0], jumping_data[:, 3], label='z')
-ax[1].set_xlabel('Time (s)')
-ax[1].set_ylabel('Acceleration (m/s^2)')
-ax[1].set_title('Jumping Acceleration vs. Time')
-ax[1].legend()
+# ax[1].plot(jumping_data[:, 0], jumping_data[:, 1], label='x')
+# ax[1].plot(jumping_data[:, 0], jumping_data[:, 2], label='y')
+# ax[1].plot(jumping_data[:, 0], jumping_data[:, 3], label='z')
+# ax[1].set_xlabel('Time (s)')
+# ax[1].set_ylabel('Acceleration (m/s^2)')
+# ax[1].set_title('Jumping Acceleration vs. Time')
+# ax[1].legend()
 
-# plt.show()
-
-# Plot histograms of acceleration magnitudes for walking and jumping data
-walking_mags = np.linalg.norm(walking_data[:, 1:4], axis=1)
-jumping_mags = np.linalg.norm(jumping_data[:, 1:4], axis=1)
-
-fig, ax = plt.subplots(figsize=(12, 8))
-ax.set_xlim([0, 30]) 
-ax.hist(walking_mags.flatten(), bins=50, alpha=0.5, color='orange', label='walking')
-ax.hist(jumping_mags.flatten(), bins=50, alpha=0.5, color='green', label='jumping')
-ax.set_title('Histogram of Acceleration Magnitudes')
-ax.set_xlabel('Acceleration Magnitude')
-ax.set_ylabel('Frequency')
-ax.legend()
-fig.tight_layout()
-plt.show()
-
-
+# # plt.show()
