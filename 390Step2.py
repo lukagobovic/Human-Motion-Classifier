@@ -13,21 +13,33 @@ from matplotlib import pyplot as plt
 import h5py
 
 
-df1 = pd.read_csv('MemberData/LukaRawDataFrontPocketWalking.csv',nrows = 30000)
-df2 = pd.read_csv('MemberData/LukaRawDataWalkingJacket.csv',nrows = 30000)
-df3 = pd.read_csv('MemberData/LukaRawDataBackPocketWalking.csv',nrows = 30000)
+df1 = pd.read_csv('MemberData/LukaRawDataFrontPocketWalking.csv',nrows = 30004)
+df2 = pd.read_csv('MemberData/LukaRawDataWalkingJacket.csv',nrows = 30004)
+df3 = pd.read_csv('MemberData/LukaRawDataBackPocketWalking.csv',nrows = 30004)
 
-df4 = pd.read_csv('MemberData/CJRawDataFrontPocketWalking.csv',nrows = 18000)
-df5 = pd.read_csv('MemberData/CJRawDataJacketWalking.csv',nrows = 18000)
-df6 = pd.read_csv('MemberData/CJRawDataBackPocketWalking.csv',nrows = 18000)
+df4 = pd.read_csv('MemberData/CJRawDataFrontPocketWalking.csv',nrows = 18004)
+df5 = pd.read_csv('MemberData/CJRawDataJacketWalking.csv',nrows = 18004)
+df6 = pd.read_csv('MemberData/CJRawDataBackPocketWalking.csv',nrows = 18004)
 
-df7 = pd.read_csv('MemberData/BennettRawDataBackPocketWalking.csv',nrows = 27000)
-df8 = pd.read_csv('MemberData/BennettRawDataFrontPocketWalking.csv',nrows = 27000)
-df9 = pd.read_csv('MemberData/BennettRawDataJacketWalking.csv',nrows = 27000)
+df7 = pd.read_csv('MemberData/BennettRawDataBackPocketWalking.csv',nrows = 27004)
+df8 = pd.read_csv('MemberData/BennettRawDataFrontPocketWalking.csv',nrows = 27004)
+df9 = pd.read_csv('MemberData/BennettRawDataJacketWalking.csv',nrows = 27004)
 
-df10 = pd.read_csv('MemberData/LukaRawDataJumping.csv',nrows = 30000)
-df11 = pd.read_csv('MemberData/BennettRawDataJumping.csv')
-df12 = pd.read_csv('MemberData/CJRawDataJumping.csv',nrows = 16500)
+df10 = pd.read_csv('MemberData/LukaRawDataFrontPocketJumping.csv',nrows = 30004)
+df11 = pd.read_csv('MemberData/LukaRawDataJacketJumping.csv',nrows = 30004)
+df12 = pd.read_csv('MemberData/LukaRawDataBackPocketJumping.csv',nrows=30004)
+
+df13 = pd.read_csv('MemberData/BennettRawDataBackPocketJumping.csv', nrows=67008)
+df14 = pd.read_csv('MemberData/BennettRawDataJacketJumping.csv', nrows = 57008)
+df15 = pd.read_csv('MemberData/BennettRawDataFrontPocketJumping.csv',nrows = 58008)
+
+df13 = df13.iloc[::2, :]
+df14 = df14.iloc[::2, :]
+df15 = df15.iloc[::2, :]
+
+df16 = pd.read_csv('MemberData/CJRawDataFrontPocketJumping.csv',nrows = 16504)
+df17 = pd.read_csv('MemberData/CJRawDataBackPocketJumping.csv',nrows = 17004)
+df18 = pd.read_csv('MemberData/CJRawDataJacketJumping.csv',nrows = 16504)
 
 LukaWalkingData = pd.concat(
     [df1,df2,df3]
@@ -40,61 +52,81 @@ BennettWalkingData = pd.concat(
    [df7,df8,df9]
 )
 
+LukaJumpingData = pd.concat(
+   [df10,df11,df12]
+)
+BennettJumpingData = pd.concat(
+   [df13,df14,df15]
+)
+CJJumpingData = pd.concat(
+   [df16,df17,df18]
+)
+
 all_data = {
-    'Luka': {'walking': LukaWalkingData, 'jumping': df10},
-    'Bennett': {'walking': BennettWalkingData,'jumping': df11},
-    'CJ': {'walking': CJWalkingData, 'jumping': df12}
+    'Luka': {'walking': LukaWalkingData, 'jumping': LukaJumpingData},
+    'Bennett': {'walking': BennettWalkingData,'jumping':BennettJumpingData },
+    'CJ': {'walking': CJWalkingData, 'jumping': CJJumpingData}
 }
 
 listOfWalkingData = [df1,df2,df3,df4,df5,df6,df7,df8,df9]
+listOfJumpingData = [df10,df11,df12,df13,df14,df15,df16,df17,df18]
 
-for df in listOfWalkingData:
-  df = df.iloc[:,1:]
-  Q1 = df.quantile(0.20)
-  Q3 = df.quantile(0.80)
+for i in range(len(listOfWalkingData)):
+  # Remove outliers
+  df = listOfWalkingData[i].iloc[:,1:]
+  Q1 = df.quantile(0.30)
+  Q3 = df.quantile(0.70)
   IQR = Q3 - Q1
   df = df[~((df < (Q1 - 1.5 * IQR)) | (df > (Q3 + 1.5 * IQR)))]
 
+  #Interpolate the missing values
   df.interpolate(method='linear', inplace=True)
   
-  data = df.rolling(5).mean().dropna()
-    # Remove outliers
-    # Normalize the data
+  #Rolling average filter
+  df = df.rolling(5).mean().dropna()
+    
+  # Normalize the data
   scaler = MinMaxScaler()
-  data.iloc[:,1:-2] = scaler.fit_transform(data.iloc[:,1:-2])
+  df = scaler.fit_transform(df)
+  df = pd.DataFrame(df)
+  listOfWalkingData[i] = df
 
+#Create a dataframe with all new filtered data
 listOfWalkingDataDF = pd.DataFrame()
 for df in listOfWalkingData:
   listOfWalkingDataDF = pd.concat([listOfWalkingDataDF,df])
 
-# print(listOfWalkingDataDF)
+#Add a label column to classify it as walking data
 listOfWalkingDataDF['activity'] = 0  
 
-listOfJumpingData = pd.DataFrame()
-listOfJumpingData = [df10,df11,df12]
 
-for df in listOfJumpingData:
-  df = df.iloc[:,1:]
-  Q1 = df.quantile(0.20)
-  Q3 = df.quantile(0.80)
+for i in range(len(listOfJumpingData)):
+  # Remove outliers
+  df = listOfJumpingData[i].iloc[:,1:]
+  Q1 = df.quantile(0.30)
+  Q3 = df.quantile(0.70)
   IQR = Q3 - Q1
   df = df[~((df < (Q1 - 1.5 * IQR)) | (df > (Q3 + 1.5 * IQR)))]
 
+  #Interpolate the missing values
   df.interpolate(method='linear', inplace=True)
   
-  data = df.rolling(5).mean().dropna()
-    # Remove outliers
-    # Normalize the data
+  #Rolling average filter
+  df = df.rolling(5).mean().dropna()
+    
+  # Normalize the data
   scaler = MinMaxScaler()
-  data.iloc[:,1:-2] = scaler.fit_transform(data.iloc[:,1:-2])
+  df = scaler.fit_transform(df)
+  df = pd.DataFrame(df)
+  listOfJumpingData[i] = df
 
+#Create a dataframe with all new filtered data
 listOfJumpingDataDF = pd.DataFrame()
 for df in listOfJumpingData:
   listOfJumpingDataDF = pd.concat([listOfJumpingDataDF,df])
 
-# print(listOfWalkingDataDF)
+#Add a label column to classify it as jumping data
 listOfJumpingDataDF['activity'] = 1 
-
 
 lisfOfCombinedData = pd.concat([listOfWalkingDataDF,listOfJumpingDataDF])
 data = lisfOfCombinedData

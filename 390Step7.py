@@ -4,17 +4,10 @@ import numpy as np
 from sklearn import preprocessing
 import pickle
 from scipy.stats import skew,kurtosis
+from sklearn.preprocessing import MinMaxScaler
+
 
 def preprocess_data(data):
-  data = data.rolling(window_size).mean().dropna()
-  # Remove outliers
-  data = data[(np.abs(data.x - data.x.mean()) / data.x.std()) < 3]
-  data = data[(np.abs(data.y - data.y.mean()) / data.y.std()) < 3]
-  data = data[(np.abs(data.z - data.z.mean()) / data.z.std()) < 3]
-
-  # Normalize the data
-  data = (data - data.mean()) / data.std()
-
   # Extract features
   features = [
     np.max(data.x),
@@ -59,33 +52,54 @@ def preprocess_data(data):
     np.sqrt(np.mean(data.total_acceleration ** 2))
   ]
 
-
   return features
 
 with open('model.pkl', 'rb') as f:
     model = pickle.load(f)
 
-fileName = 'BennettRawDataJacketWalking'
+fileName = 'abdellah_walking_pocket'
 
 # Load the feature data
-originalData = pd.read_csv('MemberData/'+fileName+'.csv',nrows = 18000)
+originalData = pd.read_csv('MemberData/'+fileName+'.csv',nrows = 20000)
 window_size = 5
+
+df = originalData.iloc[:,1:]
+Q1 = df.quantile(0.25)
+Q3 = df.quantile(0.75)
+IQR = Q3 - Q1
+df = df[~((df < (Q1 - 1.5 * IQR)) | (df > (Q3 + 1.5 * IQR)))]
+
+  #Interpolate the missing values
+df.interpolate(method='linear', inplace=True)
+  
+  #Rolling average filter
+df = df.rolling(5).mean().dropna()
+    
+# Normalize the data
+scaler = MinMaxScaler()
+df = scaler.fit_transform(df)
+df = pd.DataFrame(df)
+data = df
 
 # Segment the data into windows of a given size
 def segment_data(data, window_size):
-  num_samples = int(np.floor(data.shape[0] / (window_size * 100)))  # 50 Hz sampling rate
+  num_samples = int(np.floor(data.shape[0] / (window_size * 100)))  # 100 Hz sampling rate
   segments = []
   for i in range(num_samples):
     start_idx = i * window_size * 100
     end_idx = start_idx + window_size * 100
     segment = data.iloc[start_idx:end_idx]
+    segmentNP = segment.to_numpy()
+    np.random.shuffle(segmentNP)
+    segment = pd.DataFrame(segmentNP)
     segments.append(segment)
   return segments
 
 # Segment the data and shuffle it
-segments = segment_data(originalData, window_size)
+segments = segment_data(data, window_size)
 np.random.shuffle(segments)
-
+for df in segments:
+   df.rename(columns={0: "x", 1: "y", 2: "z", 3: "total_acceleration"}, inplace=True)
 train_features = [preprocess_data(segment) for segment in segments]
 
 # X_train = pd.DataFrame(X_train)
