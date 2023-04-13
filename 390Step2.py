@@ -1,18 +1,12 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score , confusion_matrix
-from scipy.signal import savgol_filter
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.tree import DecisionTreeClassifier
-import pickle
-from sklearn.metrics import classification_report
-from sklearn.metrics import recall_score, ConfusionMatrixDisplay, roc_curve, RocCurveDisplay, roc_auc_score, f1_score
 from matplotlib import pyplot as plt
 import h5py
 
-
+#Read in raw data, note, number of rows has a 4 at the end due to the rolling window,
+# which will truncate the first 4 values in the list. Each row number is also a multiple of 500
+# to ensure no overlap occurs when segmenting
 df1 = pd.read_csv('MemberData/LukaRawDataFrontPocketWalking.csv',nrows = 30004)
 df2 = pd.read_csv('MemberData/LukaRawDataWalkingJacket.csv',nrows = 30004)
 df3 = pd.read_csv('MemberData/LukaRawDataBackPocketWalking.csv',nrows = 30004)

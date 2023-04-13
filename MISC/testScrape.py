@@ -1,10 +1,3 @@
-from bs4 import BeautifulSoup
-from selenium import webdriver
-import time
-
-# Set up Selenium webdriver with Chrome
-driver = webdriver.Chrome('C:\\Users\\Luka\\Documents\\chromedriver.exe')
-driver.get('http://192.168.2.69/')
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By

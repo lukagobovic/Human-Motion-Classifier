@@ -15,7 +15,6 @@ from sklearn.preprocessing import MinMaxScaler
 
 plot_canvas = None
 
-
 def browse_file():
     filename = filedialog.askopenfilename()
     csv_input.delete(first=0, last=255)
@@ -44,61 +43,67 @@ def import_csv():
         csv_label.grid(row=2, column=0, padx=10)
         prediciton = predict(csv_file,filename)
         plot(plot_canvas,csv_file,prediciton)
-        plot_canvas.destroy()
+        # plot_canvas.destroy()
 
 def preprocess_data(data):
-    # Extract features
-        features = [
-            np.max(data.x),
-            np.min(data.x),
-            np.ptp(data.x),
-            np.mean(data.x),
-            np.median(data.x),
-            skew(data.x),
-            np.var(data.x),
-            np.std(data.x),
-            kurtosis(data.x),
-            np.sqrt(np.mean(data.x ** 2)),
-            np.max(data.y),
-            np.min(data.y),
-            np.ptp(data.y),
-            np.mean(data.y),
-            np.median(data.y),
-            skew(data.y),
-            np.var(data.y),
-            np.std(data.y),
-            kurtosis(data.y),
-            np.sqrt(np.mean(data.y ** 2)),
-            np.max(data.z),
-            np.min(data.z),
-            np.ptp(data.z),
-            np.mean(data.z),
-            np.median(data.z),
-            skew(data.z),
-            np.var(data.z),
-            np.std(data.z),
-            kurtosis(data.z),
-            np.sqrt(np.mean(data.z ** 2)),
-            np.max(data.total_acceleration),
-            np.min(data.total_acceleration),
-            np.ptp(data.total_acceleration),
-            np.mean(data.total_acceleration),
-            np.median(data.total_acceleration),
-            skew(data.total_acceleration),
-            np.var(data.total_acceleration),
-            np.std(data.total_acceleration),
-            kurtosis(data.total_acceleration),
-            np.sqrt(np.mean(data.total_acceleration ** 2))
-        ]
+  window_size = 50
+  num_windows = len(data) // window_size
+  features = []
+  for i in range(num_windows):
+    window_data = data.iloc[i*window_size:(i+1)*window_size]
+    window_features = [
+        np.max(window_data.x),
+        np.min(window_data.x),
+        np.ptp(window_data.x),
+        np.mean(window_data.x),
+        np.median(window_data.x),
+        skew(window_data.x),
+        np.var(window_data.x),
+        np.std(window_data.x),
+        kurtosis(window_data.x),
+        np.sqrt(np.mean(window_data.x ** 2)),
+        np.max(window_data.y),
+        np.min(window_data.y),
+        np.ptp(window_data.y),
+        np.mean(window_data.y),
+        np.median(window_data.y),
+        skew(window_data.y),
+        np.var(window_data.y),
+        np.std(window_data.y),
+        kurtosis(window_data.y),
+        np.sqrt(np.mean(window_data.y ** 2)),
+        np.max(window_data.z),
+        np.min(window_data.z),
+        np.ptp(window_data.z),
+        np.mean(window_data.z),
+        np.median(window_data.z),
+        skew(window_data.z),
+        np.var(window_data.z),
+        np.std(window_data.z),
+        kurtosis(window_data.z),
+        np.sqrt(np.mean(window_data.z ** 2)),
+        np.max(window_data.total_acceleration),
+        np.min(window_data.total_acceleration),
+        np.ptp(window_data.total_acceleration),
+        np.mean(window_data.total_acceleration),
+        np.median(window_data.total_acceleration),
+        skew(window_data.total_acceleration),
+        np.var(window_data.total_acceleration),
+        np.std(window_data.total_acceleration),
+        kurtosis(window_data.total_acceleration),
+        np.sqrt(np.mean(window_data.total_acceleration ** 2))
+    ]
+    features.append(window_features)
 
-        return features
+  return features
 
+# Function to predict whether inputted data is walking or jumping
 def predict(csvFile,filename):
 
     with open('../model.pkl', 'rb') as f:
         model = pickle.load(f)
 
-    # Load the feature data
+    # Load the original data
     originalData = csvFile
     window_size = 5
 
@@ -139,12 +144,13 @@ def predict(csvFile,filename):
     np.random.shuffle(segments)
     for df in segments:
         df.rename(columns={0: "x", 1: "y", 2: "z", 3: "total_acceleration"}, inplace=True)
-    train_features = [preprocess_data(segment) for segment in segments]
 
-    # X_train = pd.DataFrame(X_train)
-    y_pred = model.predict(train_features)
+    # Extract features
+    train_features = np.concatenate([preprocess_data(segment) for segment in segments])
 
     # Make predictions
+    y_pred = model.predict(train_features)
+
     predicted_class = np.bincount(y_pred.astype(int)).argmax()
     if predicted_class == 0:
         print("This CSV contains walking data.")

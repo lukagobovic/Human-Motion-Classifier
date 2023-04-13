@@ -1,24 +1,19 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import cross_val_score, train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import cross_val_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score , confusion_matrix
-from scipy.signal import savgol_filter
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import make_pipeline
 import pickle
 from sklearn.metrics import classification_report
-from sklearn.metrics import recall_score, ConfusionMatrixDisplay, roc_curve, RocCurveDisplay, roc_auc_score, f1_score
+from sklearn.metrics import recall_score, ConfusionMatrixDisplay, roc_curve, roc_auc_score, f1_score
 from matplotlib import pyplot as plt
 import h5py
 from scipy.stats import skew, kurtosis
-from sklearn import svm
 from sklearn.model_selection import learning_curve
 import seaborn as sns
-
-
 
 with h5py.File('ProjectFile.hdf5', 'r') as f:
     # Read train data into a list of dataframes
@@ -32,6 +27,7 @@ train_segments = X_train
 test_segments = X_test
 train_labels = y_train
 test_labels = y_test
+# Renaming labels to remain consistent
 for df in train_segments:
     df.rename(columns={0: "x", 1: "y", 2: "z", 3: "total_acceleration"}, inplace=True)
 
@@ -44,9 +40,10 @@ for df in train_labels:
 for df in test_labels:
     df.rename(columns={0: "activity"}, inplace=True)
 
-window_size = 50
-# # Preprocess the data
+# Extract the features via a rolling window. 
+# This results in a list of 100 features for every 5 second segment (10 means, 10 mins...)
 def preprocess_data(data):
+  window_size = 50
   num_windows = len(data) // window_size
   features = []
   for i in range(num_windows):
@@ -97,41 +94,40 @@ def preprocess_data(data):
 
   return features
 
-
+#Ensures that the label shapes match the feature shapes
 train_labels = np.concatenate([label[:((int)(500/window_size))] for label in train_labels])
 test_labels = np.concatenate([label[:((int)(500/window_size))] for label in test_labels])
 train_labels = train_labels.ravel()
 test_labels = test_labels.ravel()
 
+#Extract features
 train_features = np.concatenate([preprocess_data(segment) for segment in train_segments])
 test_features = np.concatenate([preprocess_data(segment) for segment in test_segments])
 
-# Train a logistic regression model
-# model = svm.SVC(kernel='linear', probability=True)
+# Train the model
+# model = DecisionTreeClassifier(max_depth=5, random_state=42)
 model = RandomForestClassifier(max_depth=5, random_state=42)
 # l_reg = LogisticRegression(max_iter=10000,random_state=42)
 # model = make_pipeline(StandardScaler(),l_reg)
 model.fit(train_features, train_labels)
 
+# Save model to pickle to be used in GUI
 with open('model.pkl', 'wb') as file:
       pickle.dump(model, file)
-
 
 # scores = cross_val_score(model, train_features+test_features, train_labels+test_labels, cv=5)
 # print(scores)
 # print("%0.2f accuracy with a standard deviation of %0.2f" % (scores.mean(), scores.std()))
 
 
-
-train_sizes = np.linspace(0.1, 1.0, 10)
 # Calculate the learning curves using the learning_curve function
+train_sizes = np.linspace(0.1, 1.0, 10)
 train_sizes, train_scores, test_scores = learning_curve(model, train_features, train_labels, cv=5, train_sizes=train_sizes)
 
 train_mean = np.mean(train_scores, axis=1)
 train_std = np.std(train_scores, axis=1)
 test_mean = np.mean(test_scores, axis=1)
 test_std = np.std(test_scores, axis=1)
-
 
 sns.set_style('whitegrid')
 
