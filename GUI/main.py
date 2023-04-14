@@ -108,6 +108,7 @@ def predict(csvFile,filename):
     window_size = 5
 
     df = originalData
+    df = df.iloc[:-(df.shape[0] % 500)+(window_size-1)] 
     Q1 = df.quantile(0.25)
     Q3 = df.quantile(0.75)
     IQR = Q3 - Q1
@@ -150,16 +151,18 @@ def predict(csvFile,filename):
 
     # Make predictions
     y_pred = model.predict(train_features)
+    plt.plot(y_pred)
+    plt.show()
 
     predicted_class = np.bincount(y_pred.astype(int)).argmax()
     if predicted_class == 0:
         print("This CSV contains walking data.")
         originalData['Walking(0)/Jumping(1)'] = 0
-        originalData.to_csv('../OutputData/'+os.path.basename(filename)+'.csv', index=False)
+        originalData.to_csv('../OutputData/'+os.path.basename(filename)+'output'+'.csv', index=False)
     else:
         print("This CSV contains jumping data.")
         originalData['Walking(0)/Jumping(1)'] = 1
-        originalData.to_csv('../OutputData/'+os.path.basename(filename)+'.csv', index=False)
+        originalData.to_csv('../OutputData/'+os.path.basename(filename)+'output'+'.csv', index=False)
 
     return predicted_class
 
@@ -219,7 +222,7 @@ input_frame = Frame(program_frame, background="#424242")
 
 # Define Frames & Sub frames
 title = Label(text="Human Motion Classifier", font=("Open Sans Bold",36), fg="#9900ff", bg="#212121")
-credits = Label(text="Created by Group 52 - Bennett Desmarais, CJ Akkawi, Luka Gobovic", font=("Open Sans", 12), fg="white", bg="#212121")
+credits = Label(text="Created by Group 53 - Bennett Desmarais, CJ Akkawi, Luka Gobovic", font=("Open Sans", 12), fg="white", bg="#212121")
 csv_label = Label(program_frame, text="Enter the file directory of the CSV file:", font=("Open Sans", 14), fg="white", bg="#424242")
 csv_input = Entry(input_frame, width=40, font=("Open Sans", 12))
 csv_status = Label(program_frame, text="", font=("Open Sans", 14), fg="white", bg="#424242")

@@ -17,6 +17,7 @@ driver.switch_to.frame(iframe)
 
 # Extract value from element
 value_x = float(driver.find_element_by_id('element6').text.strip())
+print(value_x)
 
 # Switch back to main frame
 driver.switch_to.default_content()

@@ -94,6 +94,7 @@ def preprocess_data(data):
 
   return features
 
+window_size = 50
 #Ensures that the label shapes match the feature shapes
 train_labels = np.concatenate([label[:((int)(500/window_size))] for label in train_labels])
 test_labels = np.concatenate([label[:((int)(500/window_size))] for label in test_labels])

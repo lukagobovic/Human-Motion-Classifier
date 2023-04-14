@@ -7,33 +7,33 @@ import h5py
 #Read in raw data, note, number of rows has a 4 at the end due to the rolling window,
 # which will truncate the first 4 values in the list. Each row number is also a multiple of 500
 # to ensure no overlap occurs when segmenting
-df1 = pd.read_csv('MemberData/LukaRawDataFrontPocketWalking.csv',nrows = 30004)
-df2 = pd.read_csv('MemberData/LukaRawDataWalkingJacket.csv',nrows = 30004)
-df3 = pd.read_csv('MemberData/LukaRawDataBackPocketWalking.csv',nrows = 30004)
+df1 = pd.read_csv('MemberData/LukaRawDataFrontPocketWalking.csv')
+df2 = pd.read_csv('MemberData/LukaRawDataWalkingJacket.csv')
+df3 = pd.read_csv('MemberData/LukaRawDataBackPocketWalking.csv')
 
-df4 = pd.read_csv('MemberData/CJRawDataFrontPocketWalking.csv',nrows = 18004)
-df5 = pd.read_csv('MemberData/CJRawDataJacketWalking.csv',nrows = 18004)
-df6 = pd.read_csv('MemberData/CJRawDataBackPocketWalking.csv',nrows = 18004)
+df4 = pd.read_csv('MemberData/CJRawDataFrontPocketWalking.csv')
+df5 = pd.read_csv('MemberData/CJRawDataJacketWalking.csv')
+df6 = pd.read_csv('MemberData/CJRawDataBackPocketWalking.csv')
 
-df7 = pd.read_csv('MemberData/BennettRawDataBackPocketWalking.csv',nrows = 27004)
-df8 = pd.read_csv('MemberData/BennettRawDataFrontPocketWalking.csv',nrows = 27004)
-df9 = pd.read_csv('MemberData/BennettRawDataJacketWalking.csv',nrows = 27004)
+df7 = pd.read_csv('MemberData/BennettRawDataBackPocketWalking.csv')
+df8 = pd.read_csv('MemberData/BennettRawDataFrontPocketWalking.csv')
+df9 = pd.read_csv('MemberData/BennettRawDataJacketWalking.csv')
 
-df10 = pd.read_csv('MemberData/LukaRawDataFrontPocketJumping.csv',nrows = 30004)
-df11 = pd.read_csv('MemberData/LukaRawDataJacketJumping.csv',nrows = 30004)
-df12 = pd.read_csv('MemberData/LukaRawDataBackPocketJumping.csv',nrows=30004)
+df10 = pd.read_csv('MemberData/LukaRawDataFrontPocketJumping.csv')
+df11 = pd.read_csv('MemberData/LukaRawDataJacketJumping.csv')
+df12 = pd.read_csv('MemberData/LukaRawDataBackPocketJumping.csv')
 
-df13 = pd.read_csv('MemberData/BennettRawDataBackPocketJumping.csv', nrows=67008)
-df14 = pd.read_csv('MemberData/BennettRawDataJacketJumping.csv', nrows = 57008)
-df15 = pd.read_csv('MemberData/BennettRawDataFrontPocketJumping.csv',nrows = 58008)
+df13 = pd.read_csv('MemberData/BennettRawDataBackPocketJumping.csv')
+df14 = pd.read_csv('MemberData/BennettRawDataJacketJumping.csv')
+df15 = pd.read_csv('MemberData/BennettRawDataFrontPocketJumping.csv')
 
 df13 = df13.iloc[::2, :]
 df14 = df14.iloc[::2, :]
 df15 = df15.iloc[::2, :]
 
-df16 = pd.read_csv('MemberData/CJRawDataFrontPocketJumping.csv',nrows = 16504)
-df17 = pd.read_csv('MemberData/CJRawDataBackPocketJumping.csv',nrows = 17004)
-df18 = pd.read_csv('MemberData/CJRawDataJacketJumping.csv',nrows = 16504)
+df16 = pd.read_csv('MemberData/CJRawDataFrontPocketJumping.csv')
+df17 = pd.read_csv('MemberData/CJRawDataBackPocketJumping.csv')
+df18 = pd.read_csv('MemberData/CJRawDataJacketJumping.csv')
 
 LukaWalkingData = pd.concat(
     [df1,df2,df3]
@@ -63,11 +63,14 @@ all_data = {
 }
 
 listOfWalkingData = [df1,df2,df3,df4,df5,df6,df7,df8,df9]
+
 listOfJumpingData = [df10,df11,df12,df13,df14,df15,df16,df17,df18]
 
 for i in range(len(listOfWalkingData)):
   # Remove outliers
+  window_size = 5
   df = listOfWalkingData[i].iloc[:,1:]
+  df = df.iloc[:-(df.shape[0] % 500)+(window_size-1)] 
   Q1 = df.quantile(0.30)
   Q3 = df.quantile(0.70)
   IQR = Q3 - Q1
@@ -77,7 +80,7 @@ for i in range(len(listOfWalkingData)):
   df.interpolate(method='linear', inplace=True)
   
   #Rolling average filter
-  df = df.rolling(5).mean().dropna()
+  df = df.rolling(window_size).mean().dropna()
     
   # Normalize the data
   scaler = MinMaxScaler()
@@ -96,7 +99,9 @@ listOfWalkingDataDF['activity'] = 0
 
 for i in range(len(listOfJumpingData)):
   # Remove outliers
+  window_size = 5
   df = listOfJumpingData[i].iloc[:,1:]
+  df = df.iloc[:-(df.shape[0] % 500)+(window_size-1)]   
   Q1 = df.quantile(0.30)
   Q3 = df.quantile(0.70)
   IQR = Q3 - Q1
@@ -106,7 +111,7 @@ for i in range(len(listOfJumpingData)):
   df.interpolate(method='linear', inplace=True)
   
   #Rolling average filter
-  df = df.rolling(5).mean().dropna()
+  df = df.rolling(window_size).mean().dropna()
     
   # Normalize the data
   scaler = MinMaxScaler()
